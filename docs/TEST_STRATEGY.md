@@ -10,6 +10,7 @@
 
 - 승인된 Order Intent 없이 브로커 제출이 발생하지 않는다.
 - 동일 Order Intent가 두 개의 독립 주문으로 제출되지 않는다.
+- 동시 Order Intent가 같은 현금·매도수량·종목·섹터 한도를 중복 예약하지 않는다.
 - 정책·리스크 거절 또는 불명 판정은 주문으로 이어지지 않는다.
 - `UNKNOWN` 상태는 무조건 재주문으로 이어지지 않는다.
 - Kill Switch ACK 후 신규 주문이 제출되지 않는다.
@@ -90,6 +91,9 @@
 | 수동 앱 주문 | Reconciliation으로 불일치 탐지·신규 주문 중단 |
 | Broker 상태 unknown Enum | 안전 종결 추측 금지, Reconciliation Required |
 | 동일 종목·동일 신호 반복 | 업무 중복 키로 차단 |
+| 같은 계좌의 Candidate 동시 승인 | 계좌 단위 직렬화, 활성 Reservation 포함 재평가, 합산 한도 초과 0건 |
+| Executor 재검증 거절·Intent 만료 | Broker 호출 없음, 근거와 함께 Reservation 해제 |
+| `UNKNOWN` 주문의 Reservation | Reconciliation 완료 전 유지, 신규 한도 계산에 계속 포함 |
 
 Mock Broker는 성공·거절·Timeout·응답 유실·부분 체결·취소 Race를 결정론적으로 재현해야 한다.
 
@@ -146,9 +150,10 @@ Kill ACK 지연과 ACK 이후 제출 수를 측정한다. 자동 전량 청산�
 | 단계 | 필수 Gate |
 |---|---|
 | 구현 기반 | Unit·Contract·Secret Scan·기본 CI |
-| Replay | 동일 입력의 결정론적 결과, 중복 업무 반영 0건 |
-| Paper | 정책 위반·중복 주문 0건, Kill·UNKNOWN 테스트 통과 |
+| Backtest | Look-ahead·비용·원가·재현성 검사 통과 |
+| Replay·합성 Load | 동일 입력의 결정론적 결과, 중복 업무 반영 0건, 처리량·지연 기준선 확보 |
 | Shadow | 데이터 최신성·완전성·정합성 기준 충족 |
+| Paper | 정책 위반·동시 한도 초과·중복 주문 0건, Reservation·Kill·UNKNOWN 테스트 통과 |
 | Approval-required | 운영자 인증·감사·예외 UI·알림 검증 |
 | Limited Auto | 백업 복구·실패 주입·SLO·Runbook·별도 사용자 승인 |
 | Live Auto | 장기간 안전 지표, 다중 활성 조건, 운영 환경 분리 |

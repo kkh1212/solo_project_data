@@ -51,6 +51,7 @@ model_version
 prompt_version
 policy_set_version
 order_candidate_id
+risk_reservation_id
 order_intent_id
 broker_request_id
 ```
@@ -94,8 +95,7 @@ broker_request_id
 | `strategy.signal.v1` | `strategy_id:symbol` | Strategy | Trading Core, Mart | 90일 | 새 `strategy_run_id` |
 | `recommendation.generated.v1` | `symbol` | Intelligence | Core, Mart | 90일 | 이전 결과 불변 |
 | `risk.decision.v1` | `order_candidate_id` | Core Outbox | Audit, Mart | 90일 | 거래 재실행 금지 |
-| `order.intent.v1` | `order_intent_id` | Core Outbox | Executor | 30일 | 자동 Replay 금지 |
-| `order.submit-requested.v1` | `account_id` | Dispatcher | Executor | 7일 | 운영자 승인 없이 재전송 금지 |
+| `order.intent.v1` | `account_id` | Core Outbox | Executor | 30일 | 자동 Replay·다른 Topic 재발행 금지 |
 | `order.lifecycle.v1` | `order_intent_id` | Executor/Poller | Core, Mart, Reconciler | 90일 | 브로커 조회로 재구성 |
 | `account.snapshot.v1` | `account_id` | Executor | Reconciler, Risk | 30일 | 새 Snapshot 비교 |
 | `reconciliation.result.v1` | `account_id` | Reconciler | Core, Alert | 90일 | 멱등 실행 가능 |
@@ -105,6 +105,8 @@ broker_request_id
 
 보존 기간은 현재 디스크 70 GiB의 실제 증가율과 뉴스 라이선스를 측정한 뒤 조정한다.
 
+주문 제출의 권위 있는 경로는 `Core Outbox → order.intent.v1 → Executor Inbox` 하나다. `order_intent_id`는 Payload와 Inbox의 업무 멱등 키로 사용하고, `account_id` Key는 계좌 내 전달 순서를 보조한다. 별도 Dispatcher와 두 번째 제출 Topic은 두지 않는다.
+
 ## 전달·처리 보장
 
 - Kafka 처리 의미는 At-Least-Once를 기본으로 한다.
@@ -113,6 +115,7 @@ broker_request_id
 - Kafka Transaction을 사용하더라도 브로커 REST 호출까지 Exactly-Once라고 주장하지 않는다.
 - 주문 DLQ는 자동 Replay하지 않는다. 먼저 내부·브로커 상태를 조회한다.
 - Replay 환경은 운영 Topic·계좌·Credential과 물리적 또는 논리적으로 분리한다.
+- 같은 계좌의 동시 Risk 승인은 PostgreSQL의 계좌 단위 잠금·Version 검사와 `risk_reservation`으로 직렬화한다. Kafka Partition만으로 자금·수량·노출 한도를 보장하지 않는다.
 
 ## 데이터 품질
 
@@ -126,7 +129,7 @@ broker_request_id
 | 시장 | 음수·0 가격, 비정상 가격·거래량, 호가 관계, 통화·단위 |
 | 종목 | symbol→instrument 매핑, 상장 상태, 거래 중단·코드 변경 |
 | 뉴스 | 동일 ID, URL hash, 유사 기사, 발행/수집 시각, 잘못된 종목 연결 |
-| 계좌 | 현금·포지션·미체결 주문·체결 합계 대사 |
+| 계좌 | 현금·포지션·미체결 주문·활성 예약·체결 합계 대사 |
 | 파이프라인 | 입력·출력 건수, 실패·재시도, Schema·코드 버전 |
 
 DQ 결과는 단순 성공/실패 외에 `PASS`, `WARN`, `FAIL`, `QUARANTINED`로 기록한다. 주문 입력에 필요한 데이터의 `WARN` 허용 여부는 정책으로 명시하며, 불명확하면 차단한다.
@@ -193,6 +196,8 @@ erDiagram
     ORDER_CANDIDATE ||--o{ RISK_DECISION : evaluated_by
     RISK_DECISION ||--o| ORDER_INTENT : approves
     ACCOUNT ||--o{ ORDER_INTENT : owns
+    ACCOUNT ||--o{ RISK_RESERVATION : reserves
+    ORDER_INTENT ||--|| RISK_RESERVATION : backed_by
     ORDER_INTENT ||--o{ BROKER_ORDER : submitted_as
     BROKER_ORDER ||--o{ ORDER_EVENT : transitions
     BROKER_ORDER ||--o{ FILL_OBSERVATION : observed_as
@@ -209,6 +214,8 @@ erDiagram
 - 수량도 `NUMERIC`이며 시장별 scale·호가 단위는 Adapter와 정책에서 검증한다.
 - DB 시각은 `timestamptz` UTC, 거래일·거래소 시간대는 별도 필드다.
 - 주문 현재 상태와 append-only `order_event`를 함께 유지한다.
+- 승인된 Intent는 현금·매도수량·종목·섹터 노출을 나타내는 `risk_reservation`과 연결한다. Decision·Reservation·Intent·Outbox는 같은 트랜잭션에서 생성한다.
+- `risk_reservation`은 `ACTIVE`, `PARTIALLY_CONSUMED`, `CONSUMED`, `RELEASED`, `EXPIRED` 상태와 금액·수량·만료·해제 근거를 보존한다. `UNKNOWN` 주문의 예약은 Reconciliation 전 해제하지 않는다.
 - 정책·전략·모델·Prompt·Schema는 새 버전을 추가하고 과거 기록을 덮어쓰지 않는다.
 - Outbox·Inbox·Processing Attempt에 Unique Constraint와 처리 시각을 둔다.
 

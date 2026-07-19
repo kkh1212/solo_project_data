@@ -51,10 +51,11 @@ flowchart LR
     SG --> CORE["Trading Core"]
     RG --> CORE
     CORE --> PR["정책·리스크 엔진"]
-    PR -->|승인| OI["Order Intent + Outbox"]
+    PR -->|승인| OI["Reservation + Order Intent + Outbox"]
     PR -->|거절·불명| EX["예외·감사"]
 
-    OI --> OE["Isolated Order Executor"]
+    OI --> OT["order.intent.v1<br/>key=account_id"]
+    OT --> OE["Isolated Order Executor"]
     OE --> TORD["Toss Order REST"]
     TORD --> OP["주문 상태 Poller"]
     OP --> OL["order.lifecycle.v1"]
@@ -102,11 +103,14 @@ Airflow는 외부 수집 로직의 소유자가 아니라 수집 Job을 오케�
 - 비동기 업무 이벤트는 Kafka를 사용한다.
 - Transactional Outbox로 DB 변경과 발행 의도를 같은 트랜잭션에 기록한다.
 - Consumer는 Inbox 또는 처리 이력으로 멱등성을 확보한다.
+- 주문 제출 명령은 `Trading Core Outbox → order.intent.v1 → Executor Inbox` 단일 경로만 사용한다. 별도 Dispatcher나 다른 주문 제출 Topic을 두지 않는다.
+- `order.intent.v1`은 `account_id`로 Partition하여 계좌 내 전달 순서를 보조하되, 동시 주문의 자금·수량·노출 한도는 PostgreSQL의 계좌 단위 예약과 트랜잭션이 최종 보장한다.
 - Kill Switch, 취소, 모호한 주문 상태 조회는 Kafka에만 의존하지 않는다.
 - AI Tool과 Admin API는 자유 형식 명령 대신 내부 ID 기반의 제한된 HTTP 인터페이스를 사용한다.
 - 서비스마다 DB Schema·Role과 쓰기 소유권을 정한다. 여러 서비스가 같은 업무 테이블을 임의로 수정하지 않는다.
 
 전달 보장 결정은 [ADR-0002](adr/0002-delivery-semantics.md)를 따른다.
+계좌 단위 예약과 단일 주문 제출 경로는 [ADR-0004](adr/0004-account-reservation-and-submit-path.md)를 따른다.
 
 ## Java와 Python 경계
 
@@ -114,7 +118,7 @@ Airflow는 외부 수집 로직의 소유자가 아니라 수집 Job을 오케�
 
 - 금액·수량·비중 계산
 - 정책·리스크 최종 판정
-- Order Candidate/Intent와 주문 상태 머신
+- Order Candidate/Intent, 계좌 단위 예약과 주문 상태 머신
 - Order Executor와 Broker Adapter
 - 계좌·주문 Reconciliation
 - 안전 중요 Kafka Consumer와 내부 운영 API
@@ -133,7 +137,7 @@ Python이 금융 수치를 취급할 때도 `Decimal`을 사용한다. 보고서
 
 | 저장소 | 역할 | 하지 않는 역할 |
 |---|---|---|
-| PostgreSQL | 주문·체결 관측·계좌·정책·감사·메타데이터·초기 Mart | 고용량 원본 무기한 저장 |
+| PostgreSQL | 주문·체결 관측·계좌·정책·예약·감사·메타데이터·초기 Mart | 고용량 원본 무기한 저장 |
 | Kafka | 실시간 전달, Consumer 분리, 제한된 Replay | 영구 감사 저장소 |
 | S3 호환 저장소 | 원본, Replay, 백업·감사 Export | 낮은 지연 트랜잭션 |
 | Redis | 다중 인스턴스 캐시·Rate Limit 후보 | 주문 정합성 Source of Truth |

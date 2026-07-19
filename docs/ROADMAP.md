@@ -12,7 +12,7 @@
 `CONFIRMED` 현재는 **0단계 설계 기준선 문서화 완료, 애플리케이션 구현 전**이다.
 
 - 문서와 ADR만 존재
-- Git 저장소·빌드·CI·애플리케이션·인프라 구성 없음
+- Git 저장소와 설계 문서 커밋 이력 존재, 빌드·CI·애플리케이션·인프라 구성은 아직 없음
 - 실제 Credential·API 호출·주문 없음
 - 기본 거래 모드는 개념적으로 실주문 불가
 - 시장·전략·정책 수치·공급자 등은 `TBD`
@@ -22,11 +22,11 @@
 | 단계 | 범위 | 주요 산출물 | 종료 Gate |
 |---|---|---|---|
 | 0. 설계 | 요구·경계·위협·TBD·ADR | 현재 `docs/` | 구조 기준선 승인 |
-| 1. 저장소 기반 | Git, 문서 검증, Java/Python 골격, CI, Mock-only 설정 | 빌드·테스트 명령, 의존성 Lock | 실주문 경로·Secret 없음, CI 통과 |
-| 2. 계약·도메인 | Money·Time·Event, Instrument, 주문 상태, Schema | 공통 계약·상태 머신 Test | Decimal·시간·호환성 Test 통과 |
+| 1. 저장소 기반 | 저장소 규칙, 문서 검증, Java/Python 골격, CI, Mock-only 설정 | 빌드·테스트 명령, 의존성 Lock | 실주문 경로·Secret 없음, CI 통과 |
+| 2. 계약·도메인 | Money·Time·Event, Instrument, 주문·Reservation 상태, Schema | 공통 계약·상태 머신 Test | Decimal·시간·호환성 Test 통과 |
 | 3. 데이터 기반 | Kafka, PostgreSQL, Object Storage, 합성 Collector | Raw→Silver, Inbox/Outbox 기반 | Replay·중복 제거·DQ 통과 |
 | 4. 특징·전략 | 결정론적 전략 1개, 비용 모델, 백테스트 | Feature·Signal·Backtest Report | Look-ahead·재현성·비용 검사 |
-| 5. 정책·주문 Mock | Policy/Risk, Candidate/Intent, Mock Executor, Kill | 주문 상태·Audit·예외 | 중복·UNKNOWN·Kill Race 통과 |
+| 5. 정책·주문 Mock | Policy/Risk, Candidate/Intent/Reservation, Mock Executor, Kill | 주문 상태·Audit·예외 | 동시 한도·중복·UNKNOWN·Kill Race 통과 |
 | 6. Mart·Semantic | dbt Mart, Metric Registry, 정적 보고서 | Gold·Lineage·대사 Test | 보고서 수치 대사 통과 |
 | 7. 뉴스·AI Harness | 공급자 결정 후 뉴스, Tool Allowlist, 평가 | Recommendation·Agent Scorecard | Injection·근거·비용 기준 통과 |
 | 8. 관측·복구 | OTel, Prometheus, Grafana, 장애 주입 | Dashboard·SLO 기준선·Runbook | 복구·알림·백업 Restore 통과 |
@@ -42,7 +42,7 @@
 
 제안 범위는 다음과 같다.
 
-1. 실제 Git 저장소 초기화 여부 확인
+1. 현재 Git 저장소의 브랜치·검증·문서 갱신 규칙 확정
 2. `apps/`, `contracts/`, `platform/`, `tests/`, `fixtures/synthetic/` 최소 디렉터리 생성
 3. Java와 Python 버전·빌드 도구 ADR 작성
 4. Java·Python의 빈 애플리케이션이 아니라 공통 `Money`, `Timestamp`, Event Envelope 계약부터 시작

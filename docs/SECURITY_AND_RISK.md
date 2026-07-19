@@ -22,13 +22,15 @@ flowchart TD
 | 주체 | 허용 | 금지 |
 |---|---|---|
 | Market Collector | 시세·시장 정보 조회 | 계좌·주문 |
-| Trading Core | 정책·Intent·내부 상태 | Broker Credential |
-| Order Executor | 제한된 계좌·주문 API | AI 판단·임의 전략 |
+| Trading Core | 정책·Intent·Reservation·내부 상태 | Broker Credential |
+| Order Executor | 제한된 Intent·Reservation 조회와 계좌·주문 API | AI 판단·임의 전략 |
 | Airflow | 배치 DB·Object Storage, 제한된 Reconciliation 요청 | Broker Credential |
 | Intelligence | 정제 뉴스·Semantic Tool | 주문 API·자유 SQL·셸 |
 | Dashboard | 읽기·승인 Workflow·Kill 제어 | DB 직접 쓰기·Credential |
 
-서비스별 DB Role과 Schema 쓰기 소유권을 분리한다. Order Executor는 필요한 Intent 조회, Inbox, 주문 상태 기록 범위만 가진다.
+서비스별 DB Role과 Schema 쓰기 소유권을 분리한다. Order Executor는 필요한 Intent·Reservation 조회, Inbox, 주문 상태 기록 범위만 가진다.
+
+Kafka ACL은 `order.intent.v1` Producer를 Trading Core Outbox, Consumer를 Order Executor로 제한한다. Admin API, AI, Airflow와 Dashboard에는 해당 Topic 발행 권한을 주지 않는다.
 
 ## 비밀정보
 
@@ -73,6 +75,7 @@ flowchart TD
 | 위협 | 통제 |
 |---|---|
 | 중복 주문 | Unique Constraint, Outbox/Inbox, 내부 idempotency, Broker 조회 |
+| 동시 Intent의 한도 초과 | 계좌 단위 트랜잭션 직렬화, 현금·수량·노출 Reservation, 충돌 시 재평가 |
 | 응답 유실 후 재주문 | `UNKNOWN`, 동일 본문·공식 기간 검증 외 자동 재시도 금지 |
 | Credential 유출 | Executor 격리, Secret Manager, egress·DB 최소 권한, 마스킹 |
 | 정책 우회 | AI·Dashboard와 정책 실행 경로 분리, Executor 재검증 |

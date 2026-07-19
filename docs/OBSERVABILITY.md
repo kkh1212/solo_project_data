@@ -68,6 +68,8 @@ market_event_id
 - 제출 시도, 브로커 접수, 거절, 부분·전체 체결률
 - 주문 제출·접수·첫 체결·완료 지연
 - 중복 주문 차단과 idempotency 충돌 건수
+- 활성·만료·고아 Reservation, 예약 충돌·재평가·해제 지연
+- 예약 현금·매도수량·종목·섹터 노출과 실제 미체결 주문의 차이
 - 정책·리스크 차단 건수와 사유
 - `UNKNOWN`과 Reconciliation Required 건수·해결 시간
 - 계좌·포지션·미체결 불일치 건수
@@ -106,6 +108,7 @@ market_event_id
 |---|---|---|
 | 정책 안전 | 정책 위반 주문 제출 0건 | 자동거래 중단·조사 |
 | 중복 안전 | 동일 Intent의 중복 브로커 주문 0건 | 전체 계좌 Stop |
+| 동시 한도 | 활성 Reservation을 포함한 현금·수량·노출 초과 승인 0건 | 신규 주문 중단·Reconciliation |
 | Kill | Executor ACK p99 2초 이내, ACK 후 신규 제출 0건 | 직접 운영 개입 |
 | Trace | 모든 주문의 Intent·Decision·Policy 연결률 100% | Reconciliation·승격 차단 |
 | 모호한 응답 | `UNKNOWN` 분류 누락 0건 | 재주문 금지 |

@@ -11,7 +11,7 @@
 
 ## Toss Securities Open API 확인 기준선
 
-2026-07-16 공식 공개 문서를 읽기 전용으로 확인했다. 실제 인증·계좌·주문 호출은 수행하지 않았다.
+2026-07-19 공식 공개 문서를 읽기 전용으로 재확인했다. 실제 인증·계좌·주문 호출은 수행하지 않았다.
 
 - 공식 가이드: <https://developers.tossinvest.com/docs>
 - LLM 안내: <https://developers.tossinvest.com/llms.txt>
@@ -37,7 +37,7 @@
 - 정확한 Endpoint와 요청·응답 Schema
 - Rate Limit Group별 실제 한도와 우선순위
 - 주문 상태·정정·취소 상태 전이
-- 종료 주문 조회와 조회 가능 기간
+- 종료 주문 목록의 조회 기간·페이징·상태 분류
 - 개별 체결 ID·체결 목록 제공 여부
 - `clientOrderId`로 주문을 조회할 수 있는지 여부
 - 모호한 응답 이후 안전한 복구 수단
@@ -46,7 +46,7 @@
 - 조회 권한과 주문 권한 분리 가능 여부
 - 등록 IP·Credential 회전·토큰 만료 정책
 
-현재 OAS에는 종료 주문 조회에 관한 설명과 미지원 표현이 함께 보이므로 구현 전에 공식 확인이 필요하다. 확인하지 못하면 Reconciliation에서 지원된다고 가정하지 않는다.
+2026-07-19 OAS `1.2.4`에서는 `status=CLOSED` 주문 목록 조회와 모든 상태의 개별 주문 상세 조회를 확인했다. Reconciliation은 이 기능을 사용할 수 있도록 설계하되, Broker Adapter 구현 직전에 조회 기간·페이징·상태 Schema를 다시 검증하고 승인된 OAS Snapshot으로 Contract Test를 고정한다.
 
 공식 멱등성 10분은 시스템 전체의 중복 방지 보장이 아니다. 내부 idempotency key와 주문 시도 기록은 더 오래 보존하며, 유효 기간 이후 같은 `clientOrderId`를 자동 재전송하지 않는다.
 

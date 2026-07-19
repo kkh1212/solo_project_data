@@ -49,6 +49,7 @@
 실거래 수익률보다 다음 엔지니어링 성과를 우선한다.
 
 - 동일 Intent의 브로커 중복 주문 0건
+- 동시 Intent가 현금·수량·노출 한도를 초과 승인한 건수 0건
 - 정책 위반 주문 제출 0건
 - 모든 주문과 정책·전략·근거 버전의 추적 가능성
 - 모호한 응답의 무조건 재주문 0건
@@ -84,7 +85,7 @@
 → Order Candidate
 → 정책 검사
 → 리스크 검사
-→ 승인된 Order Intent
+→ Risk Reservation과 승인된 Order Intent
 → Order Executor
 → 주문 상태 조회
 → 계좌·주문 Reconciliation

@@ -17,6 +17,7 @@
 | Recommendation | 등급·근거·위험을 가진 분석 결과 | 전략·뉴스 분석 후 |
 | Order Candidate | 정책·리스크 평가 대상 주문 후보 | 전략이 주문을 제안할 때 |
 | Risk Decision | 정책·리스크의 규칙별 판정 Snapshot | Candidate 평가 시 |
+| Risk Reservation | 승인된 Intent가 사용할 현금·매도수량·노출 한도의 예약 | Decision·Intent와 같은 DB 트랜잭션 |
 | Order Intent | 실행 조건을 통과한 불변 주문 의도 | 승인 판정과 같은 DB 트랜잭션 |
 | Broker Order | 브로커에 실제 제출된 주문 | Executor 제출 이후 |
 | Fill Observation | 공식 API에서 관측한 체결 결과 | 주문 조회·Reconciliation 시 |
@@ -39,9 +40,22 @@ CREATED → EVALUATING → APPROVED
 
 ```text
 READY → DISPATCHED → ACCEPTED_BY_EXECUTOR
-   ↘ EXPIRED
-   ↘ CANCELED
+  │         └──────→ REJECTED_BY_EXECUTOR
+  ├───────────────→ EXPIRED
+  └───────────────→ CANCELED
 ```
+
+Intent의 주문 속성과 승인 Snapshot은 불변이다. 상태 전이는 별도 이력으로 기록하며, `REJECTED_BY_EXECUTOR`는 브로커 호출 전에 재검증이 명확히 실패한 종결 상태다. 이 경우 Broker Order를 만들지 않는다.
+
+### Risk Reservation
+
+```text
+ACTIVE → PARTIALLY_CONSUMED → CONSUMED
+   ├───────────────────────→ RELEASED
+   └───────────────────────→ EXPIRED
+```
+
+`UNKNOWN` Broker Order와 연결된 예약은 임의 해제하지 않는다. Reconciliation으로 브로커 제출·체결 여부가 확정된 뒤 소비하거나 해제한다.
 
 ### Broker Order
 
@@ -69,12 +83,12 @@ flowchart TD
     POL -->|거절·충돌| REJ["REJECTED + 사유"]
     POL -->|통과| RISK{"Risk·비용·유동성 검사"}
     RISK -->|거절·불명| REJ
-    RISK -->|통과| TX["Decision + Intent + Outbox 원자 기록"]
+    RISK -->|통과| TX["Decision + Reservation + Intent + Outbox 원자 기록"]
     TX --> EXEC["Order Executor Inbox"]
     EXEC --> DUP{"이미 처리?"}
     DUP -->|예| OLD["기존 결과 반환"]
-    DUP -->|아니오| PRE["Intent Hash·TTL·계좌·Kill 재검증"]
-    PRE -->|실패| ER["Executor Rejected"]
+    DUP -->|아니오| PRE["Intent·Reservation·TTL·계좌·Kill 재검증"]
+    PRE -->|실패| ER["REJECTED_BY_EXECUTOR + Reservation 해제"]
     PRE -->|통과| SUB["SUBMITTING 기록 후 Broker 호출"]
     SUB --> RESP{"응답"}
     RESP -->|명확| SAVE["Broker ID·상태 저장"]
@@ -84,6 +98,23 @@ flowchart TD
     SAVE --> POLL["상태 Polling"]
     POLL --> ACC["주문·계좌 Reconciliation"]
 ```
+
+## 단일 주문 제출 경로
+
+실제 브로커 제출로 이어지는 비동기 입력은 다음 한 경로만 허용한다.
+
+```text
+Trading Core Transactional Outbox
+→ order.intent.v1 (key=account_id)
+→ Order Executor Inbox
+→ Broker Adapter
+```
+
+- `order.intent.v1`의 Producer는 Trading Core Outbox, Consumer는 Order Executor로 제한한다.
+- Admin API, AI Agent, Airflow와 Dashboard는 Topic에 직접 주문 메시지를 발행할 수 없다.
+- 승인형 거래도 승인 결과를 Trading Core에 전달하고, Core가 동일한 Outbox 경로로 발행한다.
+- Executor는 Topic Payload의 주문 속성을 신뢰하지 않고 `order_intent_id`로 불변 Intent와 Reservation을 조회·검증한다.
+- 주문 Topic은 운영자 승인 없이 Replay하거나 다른 Topic에서 자동 재발행하지 않는다.
 
 ## 멱등성과 중복 방지
 
@@ -101,6 +132,19 @@ flowchart TD
 
 공식 `clientOrderId` 보장 기간은 확인 당시 10분이다. 동일 요청의 제한된 재호출은 공식 보장 기간과 동일 본문 hash가 검증될 때만 고려한다. 기간이 지났거나 상태가 불명확하면 자동 재전송하지 않는다.
 
+## 동시 주문과 자금·노출 예약
+
+같은 계좌에서 여러 Candidate가 동시에 평가될 때 각각 같은 현금·매도수량·노출 여유를 사용하지 못하도록 계좌 단위 예약을 둔다.
+
+- Risk 평가는 최신 계좌 Snapshot, 미체결 주문과 모든 `ACTIVE` Reservation을 포함한다.
+- 승인 시 Risk Decision, Reservation, 불변 Order Intent와 Outbox를 하나의 PostgreSQL 트랜잭션으로 기록한다.
+- 계좌·통화 단위 현금, 계좌·종목 단위 매도수량, 종목·섹터·일일 신규투자 한도를 예약한다.
+- 같은 계좌의 승인 트랜잭션은 계좌 상태 행 잠금 또는 동등한 낙관적 Version 검사로 직렬화한다. 정확한 구현은 Contract 단계에서 정하되 충돌 시 재평가하고 불명확하면 거절한다.
+- Kafka의 `account_id` Partition은 처리 순서를 보조할 뿐 예약의 Source of Truth가 아니다.
+- 부분 체결은 해당 수량·금액만 소비하고 잔여 예약을 유지한다. 명확한 거절·취소·만료는 예약을 해제한다.
+- `UNKNOWN`은 중복 제출 가능성이 해소될 때까지 예약을 유지하며 운영자가 수동으로 임의 해제하지 않는다.
+- 브로커 미제출이 증명된 Intent 만료는 예약을 안전하게 해제한다. 제출 여부가 불명확한 만료·고아 Reservation은 감지·경보하고 Reconciliation 근거 없이 자동 해제하지 않는다.
+
 ## 주문 직전 재검증
 
 Executor는 Intent ID만 받고 다음을 다시 검증한다.
@@ -108,6 +152,7 @@ Executor는 Intent ID만 받고 다음을 다시 검증한다.
 - Intent 상태·서명/hash·만료 시각
 - Trading Mode와 Kill Switch Stop Latch
 - 승인된 정책 버전과 위험 판정 존재
+- `ACTIVE` Reservation의 금액·수량·만료와 Intent 일치
 - 계좌 Allowlist와 Credential 대상 계좌 일치
 - 시장·세션·종목 주문 가능 상태
 - 최신 가격과 Data Quality
@@ -156,7 +201,7 @@ Global Stop
 | 빈도 | 거래 횟수, 동일 종목 반복, 동일 신호 중복, 과도한 회전율 |
 | 비용 | 예상 수수료·세금·환율·슬리피지, 기대수익 대비 비용 |
 | 시장성 | 스프레드·유동성·최신 가격·거래 중단·시장 상태 |
-| 계좌 | 미체결 수, 연속 실패, 잔액·포지션·주문 정합성 |
+| 계좌 | 미체결 수, 활성 예약, 연속 실패, 잔액·포지션·주문 정합성 |
 | 뉴스 | 위험 임계치 이상 신규 매수 금지, 낮은 관련성·신뢰도 처리 |
 | 시스템 | DB·Kafka·Executor·Audit·정책 로딩 상태 |
 

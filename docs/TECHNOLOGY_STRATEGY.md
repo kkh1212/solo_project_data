@@ -65,7 +65,7 @@ PostgreSQL이 주문 Source of Truth다. Kafka나 Redis를 금융 상태의 최�
 
 | 후보 | 목적·필요 이유 | 도입 시점 | 장점 | 단점·대안 | 초기·자원 |
 |---|---|---|---|---|---|
-| Git | 변경·ADR·Version 추적 | 1단계 | 필수 이력 | 현재 아직 저장소 아님 | 초기 필수 |
+| Git | 변경·ADR·Version 추적 | 0~1단계 | 필수 이력 | 설계 문서 커밋 이력 존재, CI·브랜치 규칙 미구성 | 현재 사용 중 |
 | Docker | 재현 가능한 실행 환경 | 1~3단계 | 격리·Testcontainers | 현재 daemon 권한 없음 | 승인 후, 중 |
 | Docker Compose | 개인 개발 서비스 조합 | 3단계 | 현재 규모에 적합 | HA·자동복구 한계 | 초기 권장 |
 | CI | Unit·Contract·Secret·Schema 검사 | 1단계 | 회귀 방지 | 초기 설정 | 초기 필수 |

@@ -31,7 +31,7 @@ review_date
 | Event Schema | Avro+Registry PoC | Protobuf는 생성 타입 강점, Decimal 별도 모델 | 둘 다 중간 | 계약 구현 전 |
 | 구조 기준선 | Java Core+격리 Executor+Python Intelligence | 전면 모놀리스·마이크로서비스 | 현재 권장안은 승인 기준선 | 결정 완료: ADR-0001 |
 
-## P1: 뉴스·전략·Paper 전에 결정
+## P1: 뉴스·전략·Mock 정책 구현 전에 결정
 
 | 항목 | 권장 기본안 | 대안·장단점 | 안전·복잡도 | 결정 시점 |
 |---|---|---|---|---|
