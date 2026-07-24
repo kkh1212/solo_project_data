@@ -8,7 +8,8 @@
 - 기본 거래 상태: 실주문 불가
 - 확정 시장·Broker: 미국주식, Toss Securities Open API
 - 저장소 상태: Java/Python Decimal·시간·Instrument·상태·외부 주문 제안 계약,
-  Mock-only 기본 Gate, 기본 구성에 연결되지 않은 Toss Adapter 기반
+  PostgreSQL 주문 원장, Mock-only 기본 Gate, 기본 구성에 연결되지 않은 Toss
+  Adapter 기반
 - 운영 목표: 외부 정책 시스템의 주문 의도를 안전하게 검증·실행하고 단계별 승인 후 실거래
 
 수익 전략과 수익 목적의 정책은 다른 환경이 소유한다. 이 저장소는 실행 안전
@@ -27,6 +28,15 @@ Adapter와 환경 자격증명 입력 Port가 있다. 다만 기본 실행 모�
 사용한다. 외부 제안은 내부 실행 승인이 아니며 Trading Core의 인증·만료·중복,
 안전 정책과 Reservation 검증을 통과해야 내부 `Order Intent`가 된다. 입력
 Transport와 서명·상호 인증 방식은 아직 `TBD`다.
+
+`CONFIRMED` PostgreSQL 저장 계층은 서비스별 쓰기 경계를 분리한다.
+`trading_core` Schema는 Proposal Inbox, Risk Decision, Reservation, Intent와
+Outbox를 한 트랜잭션으로 기록하고, `order_executor` Schema는 Intent Inbox,
+Broker Order, 제출 시도와 Reconciliation Case를 기록한다. Trading Core에는
+Toss 계좌 Sequence나 계좌번호를 저장하지 않는다. 이 Repository는 아직 기본
+애플리케이션의 주문 흐름에 연결하지 않았고 JDBC·Flyway 자동 구성도 기본
+애플리케이션에서는 명시적으로 제외했다. 따라서 DB가 준비되지 않아도 기본
+`mock-only` 애플리케이션은 외부 DB나 실주문 능력이 없다.
 
 ## 문서 읽기 순서
 
@@ -73,6 +83,12 @@ Java 25와 Maven 3.9.x가 준비된 환경에서는 JUnit과 애플리케이션 
 mvn --batch-mode --no-transfer-progress verify
 ```
 
+PostgreSQL 통합 테스트는 `TEST_POSTGRES_URL`, `TEST_POSTGRES_USER`,
+`TEST_POSTGRES_PASSWORD`가 모두 있을 때만 실행한다. GitHub Actions는
+계좌정보가 없는 합성 PostgreSQL 18.4 서비스를 자동 제공한다. 로컬 DB나
+시스템 패키지는 이 저장소가 자동 설치·변경하지 않으며, 환경변수가 없으면
+DB 통합 테스트는 명시적으로 건너뛴다.
+
 모든 로컬 도구가 준비된 경우 전체 검증은 다음과 같다.
 
 ```bash
@@ -80,8 +96,9 @@ make test
 ```
 
 `make verify`는 필수 저장소 구조, Markdown 상대 링크, 비밀 파일·하드코딩 의심값,
-기본 Mock-only 설정, Toss OAS 기준 계약과 Order Executor 기본 Bean을 검사한다.
-CI는 Pull Request와 `main` push에서 같은 검증을 반복한다.
+기본 Mock-only 설정, Toss OAS 기준 계약, PostgreSQL 마이그레이션 불변식과
+Order Executor 기본 Bean을 검사한다. CI는 Pull Request와 `main` push에서
+같은 검증을 반복하고 PostgreSQL 통합 테스트를 추가로 실행한다.
 
 ## 저장소 구조
 

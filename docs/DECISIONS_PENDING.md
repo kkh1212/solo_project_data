@@ -30,6 +30,7 @@ review_date
 | 수익 전략·수익 목적 정책은 외부 환경이 소유하고 이 저장소는 안전한 주문 실행·복구를 소유 | `CONFIRMED` | 2026-07-24 | 사용자 결정, [ADR-0006](adr/0006-us-toss-execution-boundary.md) |
 | Toss Adapter 구현은 허용하되 기본 애플리케이션 연결·자격증명·실계좌 호출·주문은 별도 Gate로 분리 | `CONFIRMED` | 2026-07-24 | 사용자 의존성 승인, [ADR-0003](adr/0003-live-safety-boundary.md), [ADR-0006](adr/0006-us-toss-execution-boundary.md) |
 | 외부 객체는 `External Order Proposal`, 내부 실행 승인 객체는 `Order Intent`로 분리하고 제안 UUID를 Broker 멱등성 키 입력으로 사용 | `CONFIRMED` | 2026-07-24 | [ADR-0007](adr/0007-external-order-proposal-contract.md) |
+| PostgreSQL 18.4와 서비스별 Schema로 Proposal→Intent→Outbox 및 Executor 제출 시도·UNKNOWN 원장을 영속화 | `CONFIRMED` | 2026-07-24 | 사용자 의존성·CI 서비스 승인, [ADR-0008](adr/0008-postgresql-order-journal.md) |
 
 이 결정은 수익 전략의 내용·정책 수치·주문 종류·시간외 거래·이벤트 직렬화
 형식, 실제 자격증명 등록이나 특정 주문을 확정하지 않는다.

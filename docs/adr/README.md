@@ -20,5 +20,6 @@ ADR은 중요한 구조·안전·기술 선택과 그 결과를 기록한다.
 | [0005](0005-build-and-runtime-baseline.md) | 1단계 빌드와 런타임 기준선 | Accepted |
 | [0006](0006-us-toss-execution-boundary.md) | 미국주식 외부 정책과 Toss 실행 경계 | Accepted |
 | [0007](0007-external-order-proposal-contract.md) | 외부 주문 제안 의미 계약 | Accepted |
+| [0008](0008-postgresql-order-journal.md) | PostgreSQL 주문 원장과 서비스별 Schema | Accepted |
 
 시장·전략·Schema 형식·공급자·정책 수치처럼 미결정된 사항은 [DECISIONS_PENDING.md](../DECISIONS_PENDING.md)에 두고 결정 시 ADR을 추가한다.

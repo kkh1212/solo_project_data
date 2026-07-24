@@ -121,6 +121,27 @@ broker_request_id
 - Replay 환경은 운영 Topic·계좌·Credential과 물리적 또는 논리적으로 분리한다.
 - 같은 계좌의 동시 Risk 승인은 PostgreSQL의 계좌 단위 잠금·Version 검사와 `risk_reservation`으로 직렬화한다. Kafka Partition만으로 자금·수량·노출 한도를 보장하지 않는다.
 
+## 구현된 PostgreSQL 주문 원장
+
+`CONFIRMED` [ADR-0008](adr/0008-postgresql-order-journal.md)에 따라 현재
+서비스별 쓰기 Schema는 다음과 같다.
+
+| Schema | 테이블 | 소유 정보·불변식 |
+|---|---|---|
+| `trading_core` | `account_scope`, `external_proposal_inbox`, `risk_decision`, `order_intent`, `risk_reservation`, `transactional_outbox` | 계좌 별칭만 보유, Proposal→Decision→Reservation→Intent→Outbox 원자 기록 |
+| `order_executor` | `account_mapping`, `intent_inbox`, `broker_order`, `order_attempt_journal`, `reconciliation_case` | Toss `accountSeq` 매핑과 제출 결과 격리, Broker Order별 단일 `SUBMIT`, `UNKNOWN` 복구 대상 기록 |
+
+- 같은 업무 UUID의 같은 Payload는 SHA-256으로 확인해 기존 결과를 반환하고,
+  다른 Payload는 Replay 충돌로 차단한다.
+- 외부 Proposal, Risk Decision, Intent 주문 속성, Outbox Payload와 주문 Attempt
+  식별 필드는 Trigger로 사후 변경을 막는다.
+- 가격·수량·예약 값은 `NUMERIC`, 모든 저장 시각은 `TIMESTAMPTZ`를 사용한다.
+- Trading Core에는 Toss `accountSeq`나 계좌번호를 저장하지 않는다. Executor
+  Schema도 계좌번호를 저장하지 않고 공식 Adapter가 사용하는 Sequence만
+  계좌 별칭에 매핑한다.
+- 현재 구현은 Outbox와 Inbox의 저장 경계까지다. Kafka Publisher·Consumer,
+  실제 Broker 제출 연결, Reconciliation 해결 Workflow는 후속 작업이다.
+
 ## 데이터 품질
 
 최소 검사 범위는 다음과 같다.

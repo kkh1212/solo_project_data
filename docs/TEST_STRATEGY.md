@@ -26,7 +26,8 @@
 | Unit | 금액·시간·정책 규칙·변환·상태 전이 | JUnit, pytest |
 | Property-based | 반올림·비중·한도·상태 불변식 | jqwik/QuickTheories 후보, Hypothesis |
 | Contract | Kafka Schema, 내부 API, 공식 OAS Adapter | Schema Registry, Mock Server |
-| Integration | PostgreSQL·Kafka·Object Storage·Outbox/Inbox | Testcontainers |
+| Integration | PostgreSQL 주문 원장·Outbox/Inbox | GitHub Actions PostgreSQL 18.4 서비스 |
+| Integration 후보 | Kafka·Object Storage와 복합 장애 | Testcontainers |
 | Replay | 중복·순서 역전·지연·재시작의 결정론 | 고정 Dataset·checksum |
 | Backtest | 거래 비용·환율·슬리피지·Look-ahead 방지 | Python/SQL |
 | Load | 합성 이벤트 처리량·지연·Lag | k6/Gatling/전용 Producer 후보 |
@@ -168,10 +169,16 @@ Kill ACK 지연과 ACK 이후 제출 수를 측정한다. 자동 전량 청산�
   offset/UTC, Mock-only 시작 Gate, 미국주식 Instrument와 Toss Adapter
 - Python `unittest`: `Decimal` 강제·binary float 거절·명시적 반올림·UTC·Event Envelope·Mock-only JSON 계약
 - GitHub Actions: Pull Request와 `main` push에서 저장소/Python 검증과 Maven 전체 `verify`
+- GitHub Actions Java Job: 합성 PostgreSQL 18.4 서비스와
+  `TEST_POSTGRES_*` 환경변수로 Flyway·Spring JDBC 통합 테스트
 
 2026-07-24 최초 GitHub Actions Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186)에서 두 Job이 모두 통과했다. 이 결과는 Mock-only 기반의 빌드 가능성을 검증하지만 후속 단계의 Replay·동시성·주문 상태 안전성을 검증한 것으로 해석하지 않는다.
 
-pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 해당 의존성과 기반이 필요한 후속 작업이다. 현재 테스트 수단을 미래 도입 결정으로 과장하지 않는다.
+로컬 PostgreSQL 환경변수가 없으면 DB 통합 테스트는 JUnit Assumption으로
+건너뛴다. 테스트가 임의의 로컬 DB를 생성·변경하지 않으며 CI의 합성 DB에서도
+실계좌 정보·Credential을 사용하지 않는다. pytest, Property-based Test,
+Testcontainers, Replay, 부하와 장애 주입은 해당 의존성과 기반이 필요한 후속
+작업이다. 현재 테스트 수단을 미래 도입 결정으로 과장하지 않는다.
 
 ## 2단계 안전 계약 테스트
 
@@ -198,10 +205,20 @@ pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 
 - 외부 제안 UUID와 Toss `clientOrderId`의 결정론적 변환
 - Java/Python/JSON Schema의 미국주식 주문 형태·Enum·필수 필드 일치
 - `NaN`·무한대 Decimal 입력 차단
+- Proposal Inbox·Risk Decision·Reservation·Intent·Outbox의 원자적 Commit과
+  중간 실패 시 전체 Rollback
+- 같은 Proposal·Intent의 같은 Payload Replay와 다른 SHA-256 Payload 충돌
+- 비활성 계좌 별칭 차단과 Proposal·Decision·Intent·Outbox 불변 Trigger
+- Executor Inbox Claim과 Broker Order별 단일 `SUBMIT` Attempt 제약
+- 명확한 수락 결과의 Broker ID·제출 상태 기록과 같은 결과 재처리 멱등성
+- 제출 결과 `clientOrderId`와 저장된 Intent의 Binding 불일치 차단
+- 모호한 제출 결과의 `UNKNOWN` 상태와 열린 Reconciliation Case 원자적 기록
+- 제출 Attempt 식별 필드의 DB 불변 Trigger
 
 정확한 거래소·세션·시장 캘린더와 Event wire Schema 호환성 테스트는 아직
 포함하지 않는다. Toss 테스트는 합성 값과 Loopback만 사용하며 실제 API·계좌를
-호출하지 않는다.
+호출하지 않는다. PostgreSQL 통합 테스트도 합성 별칭과 UUID만 사용하고 실제
+계좌번호·Toss `accountSeq`를 Fixture에 넣지 않는다.
 
 2026-07-24 커밋 `498013b`의 GitHub Actions Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337)에서 저장소·Python 19개 테스트와 Java 25 Maven 전체 `verify`가 통과했다.
 

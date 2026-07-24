@@ -26,9 +26,11 @@
 - 실제 Credential·Toss 서버 호출·실계좌 조회·주문 없음
 - 기본 거래 모드는 코드와 JSON 계약 모두 실주문 불가
 - 주문 종류·한도·시간외 거래·Event Schema 등은 `TBD`
-- PostgreSQL·Kafka·Object Storage·Airflow·dbt 인프라는 아직 없음
+- PostgreSQL 18.4 서비스별 Schema·Flyway 마이그레이션·Spring JDBC
+  Repository와 CI 통합 테스트
+- Kafka·Object Storage·Airflow·dbt 인프라는 아직 없음
 
-2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186), 2단계 안전 계약 CI Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337), Toss Adapter CI Run [#5](https://github.com/kkh1212/solo_project_data/actions/runs/30071040816)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
+2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java와 PostgreSQL 통합 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186), 2단계 안전 계약 CI Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337), Toss Adapter CI Run [#5](https://github.com/kkh1212/solo_project_data/actions/runs/30071040816), 외부 Proposal 계약 CI Run [#7](https://github.com/kkh1212/solo_project_data/actions/runs/30071682041)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
 
 ## 단계
 
@@ -117,16 +119,34 @@ Maven Wrapper는 로컬 JDK·Maven 설치 수요와 승인 전에는 추가하�
 - 미래·만료·계좌번호 형태·비정상 Decimal·주문 형태 오류의 Broker 호출 전 차단
 - 커밋 `9f5462b`의 GitHub Actions Run #7에서 저장소/Python과 Java 25
   Maven 전체 검증 통과
+- 사용자 승인에 따라 Spring JDBC·Flyway·PostgreSQL JDBC 의존성과 GitHub
+  Actions PostgreSQL 18.4 합성 서비스를 도입
+- [ADR-0008](adr/0008-postgresql-order-journal.md)에 서비스별 Schema와 주문
+  원장 결정 기록
+- `trading_core`에 계좌 별칭, Proposal Inbox, Risk Decision, Reservation,
+  Order Intent, Transactional Outbox 마이그레이션과 원자적 Repository 구현
+- 같은 Proposal ID·같은 내용 Replay는 기존 Intent를 반환하고, 다른 내용은
+  SHA-256 충돌로 차단
+- `order_executor`에 Toss 계좌 별칭 매핑, Intent Inbox, Broker Order,
+  단일 제출 Attempt와 Reconciliation Case 마이그레이션·Repository 구현
+- 네트워크 호출 전 `SUBMIT` Attempt 기록, Broker Order별 단일 제출 제약,
+  모호한 결과의 `UNKNOWN`·열린 Reconciliation Case 원자적 기록
+- 기본 애플리케이션의 JDBC·Flyway 자동 구성을 명시적으로 제외해 DB 설정
+  하나만으로 저장·실행 경로가 활성화되지 않도록 유지
+- 실제 계좌번호는 저장하지 않고 Toss `accountSeq`는 Executor Schema에만
+  제한하며, 실제 Credential·Toss 호출·실주문은 계속 없음
 
 ### 다음 작업
 
 1. 외부 정책 시스템의 서명/상호 인증·Transport 계약 결정
-2. 계좌 별칭, Inbox/Outbox, 내부 장기 멱등성, 주문 시도 Journal과
-   Reconciliation 저장 모델 구현
-3. 미국 시장 캘린더·DST·세션·종목 메타데이터 계약과 공식 조회 Adapter 구현
-4. Toss 주문 정정의 승인·멱등성·모호한 응답 복구 계약 확정 후 구현
-5. Avro/Protobuf 작은 PoC와 ADR 후 Event wire Schema 구현
-6. 운영 Secret Manager·등록 IP·읽기 전용 실계좌 검증 절차는 별도 승인 후 수행
+2. Transactional Outbox Publisher와 Executor Intent Consumer의 Port·상태
+   전이·멱등 처리 구현
+3. Reconciliation Case 해결과 Broker Order·Reservation 수명주기 반영
+4. 미국 시장 캘린더·DST·세션·종목 메타데이터 계약과 공식 조회 Adapter 구현
+5. Toss 주문 정정의 승인·멱등성·모호한 응답 복구 계약 확정 후 구현
+6. Avro/Protobuf 작은 PoC와 ADR 후 Event wire Schema 구현
+7. 운영 DB Role·TLS·백업, Secret Manager·등록 IP·읽기 전용 실계좌 검증
+   절차는 각각 별도 승인 후 수행
 
 수익 전략·수익 목적 정책은 외부 환경의 책임으로 두며 이 단계에서 중복
 구현하지 않는다. 실제 주문은 저장 기반 멱등성·Reconciliation과 운영 Gate가

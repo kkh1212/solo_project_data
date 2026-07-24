@@ -41,7 +41,7 @@ Python도 금융 수치에는 `Decimal`을 사용하며 보고서 수치를 재�
 | 후보 | 목적·필요 이유 | 도입 시점 | 장점 | 단점·대안 | 초기·자원 |
 |---|---|---|---|---|---|
 | Kafka KRaft | 실시간 전달·Consumer 분리·Replay | 3단계 | 이벤트 기반 확장 | 단일 Broker는 HA 아님 | 초기 개발 필요, 상 |
-| PostgreSQL | 주문·정책·감사·메타데이터·초기 Mart | 2~3단계 | 트랜잭션·SQL·운영 단순 | 대규모 시계열 분석 한계 | 필수, 중 |
+| PostgreSQL 18.4 + Spring JDBC/Flyway | 주문·정책·감사·메타데이터·초기 Mart | 2단계 주문 원장부터 | 트랜잭션·SQL·명시적 Migration | 대규모 시계열 분석 한계 | 사용자 의존성·CI 서비스 승인 완료, 중 |
 | Redis | 다중 인스턴스 캐시·Rate Limit | 필요 측정 후 | 빠른 공유 상태 | 추가 장애점, 정합성 Source 부적합 | `LATER`, 중 |
 | S3 호환 Object Storage/MinIO | Raw·Replay·백업·감사 Export | 3단계 | 불변 원본·저비용 | 같은 디스크면 DR 아님 | 초기 데이터 단계, 중 |
 | Avro | Kafka 계약·Decimal logical type | 2단계 PoC | Schema 진화·Java/Python | 사람이 읽기 불편 | `RECOMMENDED` |
@@ -51,6 +51,12 @@ Python도 금융 수치에는 `Decimal`을 사용하며 보고서 수치를 재�
 | 별도 DW | 운영 DB와 분석 부하 격리 | Query SLO 위반 후 | 분석 확장 | 비용·운영 증가 | `LATER` |
 
 PostgreSQL이 주문 Source of Truth다. Kafka나 Redis를 금융 상태의 최종 기준으로 삼지 않는다.
+
+`CONFIRMED` 현재는 애플리케이션별 Flyway Location과 `trading_core`,
+`order_executor` Schema, Spring JDBC Repository를 구현했다. PostgreSQL은
+GitHub Actions의 합성 18.4 서비스에서 검증하며 운영 Host·HA·백업·Role·TLS는
+`TBD`다. Repository를 기본 주문 흐름이나 Toss Adapter에 연결하지 않았으므로
+이 도입은 실제 주문 활성화를 의미하지 않는다.
 
 ## 관측가능성
 
@@ -84,7 +90,8 @@ PostgreSQL이 주문 Source of Truth다. Kafka나 Redis를 금융 상태의 최�
 |---|---|---|---|
 | JUnit | Java Unit·상태·정책 | 1단계 | 금융 핵심 회귀 |
 | pytest | Python Unit·AI 평가 | 1단계 | 데이터·Harness 회귀 |
-| Testcontainers | PostgreSQL·Kafka 통합 | 2~3단계 | 실제 구성과 가까운 검증, Docker 필요 |
+| GitHub Actions PostgreSQL 서비스 | PostgreSQL 주문 원장 통합 | 2단계 | 승인된 18.4 서비스, 합성 데이터, 로컬 Docker 불필요 |
+| Testcontainers | Kafka 및 다중 인프라 통합 | 3단계 이후 | 실제 구성과 가까운 검증, Docker 필요 |
 | Contract Test | OAS·Kafka·내부 API | 2단계부터 | 외부·언어 경계 보호 |
 | Replay Test | 중복·순서·재시작·결정론 | 3단계부터 | 실시간 복구 증명 |
 | Load Test | 합성 처리량·p95/p99·Lag | 3단계부터 | 실제 규모 과장 방지 |
@@ -98,7 +105,7 @@ PostgreSQL이 주문 Source of Truth다. Kafka나 Redis를 금융 상태의 최�
 - Java LTS, Spring Boot
 - Python, pytest
 - 금융·시간·이벤트 계약
-- PostgreSQL, Kafka, Schema Registry, Object Storage는 단계적으로
+- PostgreSQL 주문 원장은 구현, Kafka·Schema Registry·Object Storage는 단계적으로
 - JUnit, Contract, Testcontainers, Replay
 - OpenTelemetry 계측 규약
 

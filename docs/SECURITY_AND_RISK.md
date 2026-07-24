@@ -33,6 +33,13 @@ flowchart TD
 
 Kafka ACL은 `order.intent.v1` Producer를 Trading Core Outbox, Consumer를 Order Executor로 제한한다. Admin API, AI, Airflow와 Dashboard에는 해당 Topic 발행 권한을 주지 않는다.
 
+`CONFIRMED` 현재 마이그레이션은 `trading_core`와 `order_executor` Schema의
+쓰기 경계를 분리했다. Trading Core는 계좌 별칭만 저장하고 실제 계좌번호와
+Toss `accountSeq`를 보유하지 않는다. Executor도 계좌번호는 저장하지 않으며
+Toss `accountSeq` 매핑은 해당 Schema에만 둔다. CI는 합성 DB 사용자 하나로
+마이그레이션·불변식을 검증한다. 운영 DB Role·Grant·TLS·Secret 주입은
+`TBD`이며 별도 승인과 검증 전에는 운영 연결을 구성하지 않는다.
+
 ## 비밀정보
 
 - 실제 Secret을 저장소에 넣지 않는다.

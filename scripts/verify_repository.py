@@ -27,6 +27,8 @@ EXCLUDED_PARTS = {
 
 REQUIRED_PATHS = (
     ".github/workflows/ci.yml",
+    "apps/trading-core/src/main/resources/db/migration/trading-core/V1__safe_order_storage.sql",
+    "apps/order-executor/src/main/resources/db/migration/order-executor/V1__execution_journal.sql",
     "apps/trading-core/pom.xml",
     "apps/order-executor/pom.xml",
     "contracts/broker-adapter/toss-oas-baseline.json",
@@ -254,6 +256,120 @@ def verify_external_order_proposal_contract(errors: list[str]) -> None:
         errors.append("외부 주문 제안은 세 가지 주문 형태를 구분해야 함")
 
 
+def verify_postgres_contract(errors: list[str]) -> None:
+    migrations = {
+        "trading-core": (
+            PROJECT_ROOT
+            / "apps"
+            / "trading-core"
+            / "src"
+            / "main"
+            / "resources"
+            / "db"
+            / "migration"
+            / "trading-core"
+            / "V1__safe_order_storage.sql"
+        ),
+        "order-executor": (
+            PROJECT_ROOT
+            / "apps"
+            / "order-executor"
+            / "src"
+            / "main"
+            / "resources"
+            / "db"
+            / "migration"
+            / "order-executor"
+            / "V1__execution_journal.sql"
+        ),
+    }
+    required_fragments = {
+        "trading-core": {
+            "NUMERIC",
+            "TIMESTAMPTZ",
+            "external_proposal_inbox",
+            "risk_reservation",
+            "order_intent",
+            "transactional_outbox",
+            "content_sha256",
+        },
+        "order-executor": {
+            "TIMESTAMPTZ",
+            "intent_inbox",
+            "order_attempt_journal",
+            "reconciliation_case",
+            "uq_order_attempt_single_submit",
+            "UNKNOWN",
+        },
+    }
+    for owner, path in migrations.items():
+        text = path.read_text(encoding="utf-8")
+        for fragment in required_fragments[owner]:
+            if fragment not in text:
+                errors.append(f"{owner} PostgreSQL 계약 누락: {fragment}")
+        if re.search(r"\b(?:REAL|DOUBLE\s+PRECISION)\b", text, re.IGNORECASE):
+            errors.append(f"{owner} 금융 저장에 binary float 형식 사용 금지")
+
+    executor_sql = migrations["order-executor"].read_text(encoding="utf-8")
+    if re.search(r"account_?no|account_?number", executor_sql, re.IGNORECASE):
+        errors.append("Executor Schema에 실제 계좌번호 Column을 둘 수 없음")
+
+    expected_dependencies = {
+        "spring-boot-starter-jdbc",
+        "spring-boot-starter-flyway",
+        "flyway-database-postgresql",
+        "postgresql",
+    }
+    for module in ("trading-core", "order-executor"):
+        pom_path = PROJECT_ROOT / "apps" / module / "pom.xml"
+        root = ElementTree.parse(pom_path).getroot()
+        actual = {
+            element.text
+            for element in root.findall(
+                ".//m:dependencies/m:dependency/m:artifactId",
+                namespaces=MAVEN_NAMESPACE,
+            )
+        }
+        missing = expected_dependencies - actual
+        if missing:
+            errors.append(
+                f"{module} PostgreSQL 의존성 누락: {sorted(missing)}"
+            )
+
+        source_name = (
+            "TradingCoreApplication.java"
+            if module == "trading-core"
+            else "OrderExecutorApplication.java"
+        )
+        package_name = (
+            "core" if module == "trading-core" else "executor"
+        )
+        application_source = (
+            PROJECT_ROOT
+            / "apps"
+            / module
+            / "src"
+            / "main"
+            / "java"
+            / "io"
+            / "github"
+            / "soloprojectdata"
+            / package_name
+            / source_name
+        ).read_text(encoding="utf-8")
+        for auto_configuration in (
+            "org.springframework.boot.jdbc.autoconfigure."
+            "DataSourceAutoConfiguration",
+            "org.springframework.boot.flyway.autoconfigure."
+            "FlywayAutoConfiguration",
+        ):
+            if auto_configuration not in application_source:
+                errors.append(
+                    f"{module} 기본 실행의 DB 자동 연결 차단 누락: "
+                    f"{auto_configuration}"
+                )
+
+
 def verify_build_baseline(errors: list[str]) -> None:
     baseline_path = PROJECT_ROOT / "contracts" / "build" / "runtime-baseline.json"
     try:
@@ -400,6 +516,7 @@ def main() -> int:
     verify_mock_only_contract(errors)
     verify_toss_contract(errors)
     verify_external_order_proposal_contract(errors)
+    verify_postgres_contract(errors)
     verify_build_baseline(errors)
     verify_domain_contract(errors)
 
@@ -410,7 +527,7 @@ def main() -> int:
 
     print(
         "저장소 검증 통과: 구조, 링크, Secret, 빌드 기준, "
-        "기본 Mock-only, Toss 기준, 도메인 계약"
+        "기본 Mock-only, Toss 기준, 도메인·PostgreSQL 계약"
     )
     return 0
 

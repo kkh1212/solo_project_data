@@ -151,6 +151,15 @@ Python이 금융 수치를 취급할 때도 `Decimal`을 사용한다. 보고서
 
 Redis는 `LATER`다. 초기 단일 인스턴스에서는 PostgreSQL 제약조건과 로컬 캐시를 우선한다.
 
+`CONFIRMED` 현재 PostgreSQL 구현은 `trading_core`와 `order_executor` Schema,
+각 애플리케이션의 Flyway 이력과 Spring JDBC Repository까지만 포함한다. Core는
+Proposal 승인 결과·Reservation·Intent·Outbox를 원자적으로 기록하고,
+Executor는 Intent Inbox·Broker Order·제출 Attempt·Reconciliation Case를
+기록한다. Outbox Publisher, Kafka Consumer, 실제 Toss 제출과 기본
+애플리케이션 연결은 아직 구현하지 않았다. JDBC·Flyway 자동 구성도 기본
+애플리케이션에서 명시적으로 제외해 DB 환경변수만으로 저장·주문 경로가
+활성화되지 않는다.
+
 ## 개발 배포 프로필
 
 현재 서버에서는 모든 도구를 동시에 상시 실행하지 않는다.
