@@ -65,6 +65,8 @@ broker_request_id
 - Consumer는 `event_id`와 업무 중복 키를 Inbox에 기록한다.
 - 알 수 없는 Enum은 계약상 허용하되 주문 경로에서는 명시적으로 차단·격리한다.
 
+`CONFIRMED` 1단계 구현은 Java/Python 언어 내부 `EventEnvelope`로 필수 식별자·버전·UTC 시각 불변식만 검증한다. 이는 Kafka wire Schema가 아니며 Avro/Protobuf 선택은 계속 `TBD`다.
+
 ## 이벤트 Schema
 
 `RECOMMENDED` 초기 선택은 Avro와 Schema Registry다. 이유는 Kafka 중심 이벤트 진화와 Decimal logical type, Java·Python 호환성이다. Protobuf는 생성 코드가 강점이지만 Decimal을 별도 메시지로 정의해야 한다.

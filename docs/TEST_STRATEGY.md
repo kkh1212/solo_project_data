@@ -158,6 +158,17 @@ Kill ACK 지연과 ACK 이후 제출 수를 측정한다. 자동 전량 청산�
 | Limited Auto | 백업 복구·실패 주입·SLO·Runbook·별도 사용자 승인 |
 | Live Auto | 장기간 안전 지표, 다중 활성 조건, 운영 환경 분리 |
 
+## 1단계 구현 기준선
+
+`CONFIRMED` 현재 자동 검증은 다음과 같다.
+
+- `scripts/verify_repository.py`: 필수 구조, Markdown 링크, 비밀 파일·하드코딩 의심값, Mock-only 계약, Order Executor 외부 Endpoint 부재
+- Java JUnit: `BigDecimal` 정확성·명시적 반올림·통화 불일치, 원본 offset/UTC, Mock-only 설정과 외부 Broker 능력 차단
+- Python `unittest`: `Decimal` 강제·binary float 거절·명시적 반올림·UTC·Event Envelope·Mock-only JSON 계약
+- GitHub Actions: Pull Request와 `main` push에서 저장소/Python 검증과 Maven 전체 `verify`
+
+pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 해당 의존성과 기반이 필요한 후속 작업이다. 현재 테스트 수단을 미래 도입 결정으로 과장하지 않는다.
+
 ## 완료 보고
 
 변경 완료 시 다음을 보고한다.

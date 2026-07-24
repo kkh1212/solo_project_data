@@ -1,0 +1,10 @@
+[project]
+name = "solo-project-data-contracts"
+version = "0.1.0"
+description = "Mock-only 거래 시스템의 Python 공통 계약"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.unittest]
+start-directory = "tests/python"
+pattern = "test_*.py"

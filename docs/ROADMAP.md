@@ -9,13 +9,19 @@
 
 ## 현재 상태
 
-`CONFIRMED` 현재는 **0단계 설계 기준선 문서화 완료, 애플리케이션 구현 전**이다.
+`CONFIRMED` 현재는 **1단계 실거래 기능 없는 저장소 기반 구축 진행 중**이다.
 
-- 문서와 ADR만 존재
-- Git 저장소와 설계 문서 커밋 이력 존재, 빌드·CI·애플리케이션·인프라 구성은 아직 없음
+- Java 25·Spring Boot 4.1.0·Maven 3.9.x·Python 3.12 기준선과 CI 구성
+- Java/Python `Money`, UTC 시간, 언어 내부 Event Envelope 최소 계약
+- Trading Core와 격리된 Order Executor 골격, `mock-only` 시작 Gate
+- 외부 네트워크 능력이 없는 `MockBrokerGateway`만 존재
+- 문서 링크·Secret·Mock-only 계약 검증과 Java/Python 단위 테스트
 - 실제 Credential·API 호출·주문 없음
-- 기본 거래 모드는 개념적으로 실주문 불가
+- 기본 거래 모드는 코드와 JSON 계약 모두 실주문 불가
 - 시장·전략·정책 수치·공급자 등은 `TBD`
+- PostgreSQL·Kafka·Object Storage·Airflow·dbt 인프라는 아직 없음
+
+2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다.
 
 ## 단계
 
@@ -57,6 +63,24 @@
 - 실제 뉴스 공급자 호출
 - `live-auto` 설정
 - Airflow·Kafka·Kubernetes 전체 스택 선행 구축
+
+## 1단계 작업 기록과 다음 작업
+
+### 2026-07-24 완료
+
+- 권장 디렉터리의 최소 골격과 Maven 멀티 모듈 생성
+- 빌드·런타임 기준 [ADR-0005](adr/0005-build-and-runtime-baseline.md) 채택
+- Decimal·UTC·Event Envelope의 Java/Python 최소 타입과 테스트 작성
+- Trading Core·Order Executor의 `mock-only` Fail-Closed 시작 Gate 작성
+- 외부 Endpoint·Credential·실주문 메서드가 없는 Mock Broker 경계 작성
+- GitHub Actions, 문서 링크·Secret·계약 검증, 실제 검증 명령 추가
+
+### 다음 작업
+
+1. 첫 GitHub Actions 실행에서 Java 25 Maven 빌드 결과를 확인하고 실패 시 1단계 범위에서 수정
+2. 의존성 트리와 CI Artifact 재현성 기준을 기록하고 Maven Wrapper 필요성을 검토
+3. Python 서비스가 실제로 필요해지는 시점에 pytest·패키징 도입 필요성을 확인하고, 설치가 필요하면 사전 승인
+4. 1단계 Gate를 모두 확인한 뒤 2단계 전에 시장·계산 주기·Event Schema `TBD`를 사용자 결정으로 해소
 
 ## 기술 도입 시점
 

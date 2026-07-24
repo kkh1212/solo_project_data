@@ -18,6 +18,15 @@ review_date
 
 정책 수치는 투자 권유가 아니라 Replay·Paper에서 검증할 보수적 초기 가설이다.
 
+## 완료된 구현 기반 결정
+
+| 결정 | 상태 | 결정일 | 근거 |
+|---|---|---|---|
+| Java 25, Spring Boot 4.1.0, Maven 3.9.x, Python 3.12 기준선 | `CONFIRMED` | 2026-07-24 | [ADR-0005](adr/0005-build-and-runtime-baseline.md) |
+| 1단계 실행 모드는 `mock-only`만 허용하고 외부 Broker 기능을 포함하지 않음 | `CONFIRMED` | 2026-07-24 | [ADR-0003](adr/0003-live-safety-boundary.md), [ADR-0005](adr/0005-build-and-runtime-baseline.md) |
+
+이 결정은 시장·전략·정책 수치·이벤트 직렬화 형식 또는 실제 공급자 연동을 확정하지 않는다.
+
 ## P0: 구현 기반과 데이터 계약 전에 결정
 
 | 항목 | 권장 기본안 | 대안·장단점 | 안전·복잡도 | 결정 시점 |

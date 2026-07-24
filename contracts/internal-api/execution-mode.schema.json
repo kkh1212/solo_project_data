@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-project-data.invalid/contracts/internal-api/execution-mode.schema.json",
+  "title": "Mock-only execution mode",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "mode",
+    "externalBrokerEnabled"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "mode": {
+      "const": "mock-only"
+    },
+    "externalBrokerEnabled": {
+      "const": false
+    }
+  }
+}

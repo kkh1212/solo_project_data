@@ -34,7 +34,11 @@
 
 ## 검증 규칙
 
-- 현재는 애플리케이션과 빌드 명령이 아직 없다. 구현 기반을 만들 때 `README.md`와 이 파일에 실제 검증 명령을 추가한다.
+- 저장소 구조·문서 링크·Secret·Mock-only 계약 검증: `make verify`
+- Python 공통 계약 단위 테스트: `make test-python`
+- Java 전체 빌드·JUnit: `mvn --batch-mode --no-transfer-progress verify`
+- 로컬 도구가 모두 준비된 경우 전체 검증: `make test`
+- 기준 버전은 Python 3.12, Java 25, Maven 3.9.x이며 상세 결정은 `docs/adr/0005-build-and-runtime-baseline.md`를 따른다.
 - 금융 계산, 정책, 주문 상태 전이, 멱등성, Replay, Contract, 장애·Kill Switch Race 테스트를 위험도에 비례해 작성한다.
 - 완료 전 변경 범위에 해당하는 가장 좁은 테스트부터 전체 관련 테스트까지 실행하고 결과를 보고한다.
 - 테스트하지 못한 항목과 이유를 숨기지 않는다. 실제 계좌 호출을 테스트 대용으로 사용하지 않는다.

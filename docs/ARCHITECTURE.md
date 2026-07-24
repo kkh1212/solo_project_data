@@ -157,7 +157,7 @@ Redis는 `LATER`다. 초기 단일 인스턴스에서는 PostgreSQL 제약조건
 
 실운영은 개발 서버와 분리한다. 단일 Kafka·PostgreSQL·디스크 구성은 고가용성이 아니다.
 
-## 권장 저장소 구조
+## 저장소 구조
 
 ```text
 apps/
@@ -193,4 +193,4 @@ docs/
   adr/
 ```
 
-이 구조는 다음 구현 단계의 제안이며 아직 생성하지 않는다.
+`CONFIRMED` 1단계에서는 Trading Core, Order Executor, Java/Python 공통 계약, 계약·테스트·합성 Fixture의 최소 경계를 생성했다. Collector, Intelligence, Airflow, dbt와 인프라 상세는 해당 단계 전에 선행 구현하지 않는다.

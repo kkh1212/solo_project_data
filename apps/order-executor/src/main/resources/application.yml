@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: order-executor
+  main:
+    banner-mode: "off"
+    web-application-type: none
+
+trading:
+  mode: mock-only

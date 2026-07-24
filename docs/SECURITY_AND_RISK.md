@@ -42,6 +42,8 @@ Kafka ACL은 `order.intent.v1` Producer를 Trading Core Outbox, Consumer를 Orde
 - Credential 회전과 폐기, 허용 IP, 토큰 만료 대응을 Runbook으로 관리한다.
 - 개발·Shadow·운영 자격증명을 공유하지 않는다.
 
+`CONFIRMED` 1단계 저장소 검증은 `.env`, Private Key 형식, 하드코딩된 Token·Secret 의심값을 차단한다. 이 검사는 전용 Secret Scanner를 대체한다고 주장하지 않으며, 현재 코드에는 Credential 입력과 실제 Broker Endpoint가 없다.
+
 ## 실거래 다중 활성 조건
 
 `live-auto`는 단일 환경변수로 활성화할 수 없다. 최소 다음 조건을 모두 확인한다.

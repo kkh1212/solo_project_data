@@ -1,0 +1,27 @@
+# 비밀정보와 로컬 환경
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Java
+target/
+*.class
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
