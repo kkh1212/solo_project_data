@@ -13,7 +13,8 @@
 | 구성요소 | 언어 | 책임 | 금지 사항 |
 |---|---|---|---|
 | Market Collector | Java | 공식 시세 REST 폴링, checkpoint, Rate Limit, 원본 이벤트 | 주문·계좌 권한 |
-| Trading Core | Java | 전략 수신, 정책·리스크, Candidate/Intent, 계좌 정합성, 운영 API | Broker Credential 접근 |
+| External Policy Adapter | Java | 외부 정책 의도의 인증·Schema·버전·만료 검증 | Broker Credential·직접 주문 |
+| Trading Core | Java | 외부 정책 의도 수신, 실행 안전 리스크, Candidate/Intent, 계좌 정합성, 운영 API | Broker Credential 접근 |
 | Order Executor | Java | 인증, 주문·정정·취소·조회, 주문 상태 복구 | AI 판단, 자유 형식 주문 입력 |
 | News Collector | Python | 정식 공급자 뉴스 수집, 원본 보관, 중복 후보 생성 | 비공식 무단 수집 |
 | Intelligence Service | Python | 뉴스 분석, 추천 근거, Agent Harness, 보고서 설명 | 직접 주문, 자유 SQL·셸 |
@@ -43,13 +44,13 @@ flowchart LR
     FE --> FT["feature.calculated.v1"]
     AI --> NA["news.analysis.v1"]
 
-    FT --> ST["결정론적 전략"]
+    FT --> PX["외부 정책 입력 경계<br/>Transport TBD"]
     NA --> REC["추천·뉴스 위험 신호"]
-    ST --> SG["strategy.signal.v1"]
-    REC --> RG["recommendation.generated.v1"]
+    REC --> PX
+    PX --> EPS["External Policy System"]
+    EPS --> EPI["인증·Schema·버전·만료 검증"]
 
-    SG --> CORE["Trading Core"]
-    RG --> CORE
+    EPI --> CORE["Trading Core"]
     CORE --> PR["정책·리스크 엔진"]
     PR -->|승인| OI["Reservation + Order Intent + Outbox"]
     PR -->|거절·불명| EX["예외·감사"]
@@ -66,6 +67,10 @@ flowchart LR
 ```
 
 초기 Toss 연동은 REST다. 공식 WebSocket 지원이 확인되기 전까지 다이어그램이나 포트폴리오에서 Tick Stream으로 과장하지 않는다.
+
+외부 정책 시스템과의 Transport·상호 인증·서명 방식은 `TBD`다. 위 흐름은 책임
+경계를 나타내며 아직 Event Topic이나 HTTP Endpoint를 확정하지 않는다. 외부
+시스템은 Toss API를 직접 호출하거나 Broker Credential을 받지 않는다.
 
 ## 배치 데이터 흐름
 
@@ -107,6 +112,8 @@ Airflow는 외부 수집 로직의 소유자가 아니라 수집 Job을 오케�
 - `order.intent.v1`은 `account_id`로 Partition하여 계좌 내 전달 순서를 보조하되, 동시 주문의 자금·수량·노출 한도는 PostgreSQL의 계좌 단위 예약과 트랜잭션이 최종 보장한다.
 - Kill Switch, 취소, 모호한 주문 상태 조회는 Kafka에만 의존하지 않는다.
 - AI Tool과 Admin API는 자유 형식 명령 대신 내부 ID 기반의 제한된 HTTP 인터페이스를 사용한다.
+- 외부 정책 의도는 인증·Schema·버전·만료·중복 검사를 통과한 뒤에만 Trading
+  Core의 Candidate가 되며 Broker 요청 본문으로 직접 전달하지 않는다.
 - 서비스마다 DB Schema·Role과 쓰기 소유권을 정한다. 여러 서비스가 같은 업무 테이블을 임의로 수정하지 않는다.
 
 전달 보장 결정은 [ADR-0002](adr/0002-delivery-semantics.md)를 따른다.

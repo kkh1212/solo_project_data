@@ -43,7 +43,7 @@ public class OrderExecutorApplication {
             if (brokerGateway.type() != BrokerGatewayType.MOCK
                     || brokerGateway.externalNetworkEnabled()) {
                 throw new IllegalStateException(
-                        "1단계 Order Executor는 외부 Broker Gateway를 사용할 수 없습니다"
+                        "기본 Order Executor는 외부 Broker Gateway를 사용할 수 없습니다"
                 );
             }
         }

@@ -16,6 +16,7 @@
 |---|---|---|---|---|---|
 | Java LTS | 금융 핵심 타입·동시성·정밀 계산 | 1단계 | BigDecimal, 성숙한 운영 생태계 | Python 단일 언어보다 설정 증가 | 초기 필요, 중 |
 | Spring Boot | API, DI, Kafka, 보안, 관측 통합 | 1단계 | 운영 기능·테스트 지원 | 메모리 사용, 경량 Java 대안 | 초기 필요, 중 |
+| JDK HttpClient + Jackson 3 | Toss REST·JSON Adapter | 2단계 | 별도 HTTP SDK 없이 표준 전송, 타입 있는 JSON | 재시도·Rate Limit·오류 분류 직접 구현 | 사용자 의존성 승인 완료, 낮 |
 | Kafka Consumer | 명시적 멱등 Consumer·실시간 Worker | 3단계 | 흐름과 실패 제어가 단순 | Stateful Join 직접 구현 | 초기 필요 |
 | Kafka Streams | Window·State Store·Join | 복잡도·처리량 확인 후 | 이벤트 시간·복구 지원 | RocksDB·Topology 운영 부담 | `LATER`, 중~상 |
 

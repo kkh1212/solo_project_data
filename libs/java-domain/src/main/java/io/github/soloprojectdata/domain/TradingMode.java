@@ -3,7 +3,7 @@ package io.github.soloprojectdata.domain;
 import java.util.Locale;
 
 /**
- * 1단계에서 허용되는 유일한 실행 모드다.
+ * 현재 기본 애플리케이션에서 허용되는 유일한 실행 모드다.
  *
  * <p>실거래 모드는 Enum에 존재하지 않으며 단일 설정값으로 활성화할 수 없다.</p>
  */
@@ -31,7 +31,7 @@ public enum TradingMode {
         }
 
         throw new IllegalStateException(
-                "1단계에서는 trading.mode=mock-only만 허용됩니다"
+                "현재 기본 실행에서는 trading.mode=mock-only만 허용됩니다"
         );
     }
 }

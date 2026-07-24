@@ -11,7 +11,10 @@
 
 ## Toss Securities Open API 확인 기준선
 
-2026-07-19 공식 공개 문서를 읽기 전용으로 재확인했다. 실제 인증·계좌·주문 호출은 수행하지 않았다.
+2026-07-24 공식 공개 문서를 읽기 전용으로 재확인했다. 실제 인증·계좌·주문
+호출은 수행하지 않았다. 구현 기준은
+[Toss OAS 추출 계약](../contracts/broker-adapter/toss-oas-baseline.json)에
+Canonical URL, OAS 버전과 원문 SHA-256으로 고정했다.
 
 - 공식 가이드: <https://developers.tossinvest.com/docs>
 - LLM 안내: <https://developers.tossinvest.com/llms.txt>
@@ -30,21 +33,41 @@
 - 가격·수량·금액은 Decimal 문자열 중심
 - Rate Limit 관련 응답 Header와 오류 모델 제공
 
+## 현재 Toss Adapter 구현
+
+`CONFIRMED` 다음 범위를 Order Executor 안에 구현했다.
+
+- JDK HttpClient와 Spring Boot Jackson 3
+- `POST /oauth2/token`
+- `GET /api/v1/accounts`
+- `POST /api/v1/orders`
+- `GET /api/v1/orders/{orderId}`
+- `POST /api/v1/orders/{orderId}/cancel`
+- 공식 Base URI 또는 Loopback Mock Server만 허용
+- 계좌번호를 내부 Account 모델에서 제거하고 `accountSeq`만 사용
+- `clientOrderId` 내부 필수화와 주문별 만료 승인
+- 미국주식 Decimal 수량·가격·금액 규칙
+- 명확한 4xx 거절과 모호한 409·429·5xx·Timeout 분리
+
+Adapter는 기본 애플리케이션 Bean에 연결되지 않는다. 환경 자격증명 Provider도
+구현 클래스만 존재하며 기본 시작 경로에서 생성·호출하지 않는다. 테스트는 합성
+값과 Loopback HTTP만 사용한다.
+
 ## 구현 시 반드시 재검증할 항목
 
 공식 문서는 변경될 수 있으므로 Broker Adapter 구현 직전에 OAS를 다시 확인하고 승인된 Snapshot을 Contract Test 입력으로 고정한다.
 
-- 정확한 Endpoint와 요청·응답 Schema
+- 새 OAS 버전의 Endpoint와 요청·응답 Schema 변경
 - Rate Limit Group별 실제 한도와 우선순위
 - 주문 상태·정정·취소 상태 전이
 - 종료 주문 목록의 조회 기간·페이징·상태 분류
 - 개별 체결 ID·체결 목록 제공 여부
 - `clientOrderId`로 주문을 조회할 수 있는지 여부
 - 모호한 응답 이후 안전한 복구 수단
-- 시장별 주문 유형·Time In Force·세션 제한
+- 미국 시장 캘린더·DST·주문 유형·Time In Force·세션 제한의 운영 검증
 - Paper/Sandbox 환경의 공식 제공 여부
 - 조회 권한과 주문 권한 분리 가능 여부
-- 등록 IP·Credential 회전·토큰 만료 정책
+- 등록 IP·Credential 회전·토큰 만료와 단일 유효 Token 운영 정책
 
 2026-07-19 OAS `1.2.4`에서는 `status=CLOSED` 주문 목록 조회와 모든 상태의 개별 주문 상세 조회를 확인했다. Reconciliation은 이 기능을 사용할 수 있도록 설계하되, Broker Adapter 구현 직전에 조회 기간·페이징·상태 Schema를 다시 검증하고 승인된 OAS Snapshot으로 Contract Test를 고정한다.
 

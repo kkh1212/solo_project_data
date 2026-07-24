@@ -5,6 +5,8 @@ from .identifiers import OrderCandidateId
 from .identifiers import OrderIntentId
 from .identifiers import RiskDecisionId
 from .identifiers import RiskReservationId
+from .instrument import Instrument
+from .instrument import Market
 from .money import Money
 from .safety import TradingMode
 from .states import BrokerOrderStatus
@@ -26,6 +28,8 @@ __all__ = [
     "BrokerStateEvidence",
     "BrokerSubmissionCertainty",
     "InvalidStateTransitionError",
+    "Instrument",
+    "Market",
     "Money",
     "ObservedTime",
     "OrderCandidateId",

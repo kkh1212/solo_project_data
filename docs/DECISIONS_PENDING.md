@@ -25,19 +25,26 @@ review_date
 | Java 25, Spring Boot 4.1.0, Maven 3.9.x, Python 3.12 기준선 | `CONFIRMED` | 2026-07-24 | [ADR-0005](adr/0005-build-and-runtime-baseline.md) |
 | 1단계 실행 모드는 `mock-only`만 허용하고 외부 Broker 기능을 포함하지 않음 | `CONFIRMED` | 2026-07-24 | [ADR-0003](adr/0003-live-safety-boundary.md), [ADR-0005](adr/0005-build-and-runtime-baseline.md) |
 | 수익 목적의 전략·정책 수치는 후속 구현으로 두고 Decimal·상태 전이·멱등성·Reservation 등 안전 기반을 우선 | `CONFIRMED` | 2026-07-24 | 사용자 작업 순서 결정, [ROADMAP](ROADMAP.md) |
+| 거래 시장은 미국주식, 기본 시장 시간대는 `America/New_York`, 주문 통화는 `USD` | `CONFIRMED` | 2026-07-24 | 사용자 결정, [ADR-0006](adr/0006-us-toss-execution-boundary.md) |
+| 최종 Broker는 Toss Securities Open API이며 실제 투자까지가 목표 | `CONFIRMED` | 2026-07-24 | 사용자 결정, [ADR-0006](adr/0006-us-toss-execution-boundary.md) |
+| 수익 전략·수익 목적 정책은 외부 환경이 소유하고 이 저장소는 안전한 주문 실행·복구를 소유 | `CONFIRMED` | 2026-07-24 | 사용자 결정, [ADR-0006](adr/0006-us-toss-execution-boundary.md) |
+| Toss Adapter 구현은 허용하되 기본 애플리케이션 연결·자격증명·실계좌 호출·주문은 별도 Gate로 분리 | `CONFIRMED` | 2026-07-24 | 사용자 의존성 승인, [ADR-0003](adr/0003-live-safety-boundary.md), [ADR-0006](adr/0006-us-toss-execution-boundary.md) |
 
-이 결정은 시장·전략·정책 수치·이벤트 직렬화 형식 또는 실제 공급자 연동을 확정하지 않는다.
+이 결정은 수익 전략의 내용·정책 수치·주문 종류·시간외 거래·이벤트 직렬화
+형식, 실제 자격증명 등록이나 특정 주문을 확정하지 않는다.
 
-현재 2단계는 시장과 무관한 값·시간·식별자·상태 계약만 구현한다. 거래 시장과 Event Schema가 결정되기 전에는 Instrument Schema와 Kafka wire Schema를 구현하지 않는다.
+현재 2단계는 미국주식 Instrument 최소 계약과 기본 구성에 연결되지 않은 Toss
+Adapter까지 구현한다. Kafka wire Schema와 실제 주문 활성화는 아직 구현하지
+않는다.
 
 ## P0: 구현 기반과 데이터 계약 전에 결정
 
 | 항목 | 권장 기본안 | 대안·장단점 | 안전·복잡도 | 결정 시점 |
 |---|---|---|---|---|
-| 거래 시장 | 국내주식 우선 | 미국은 환율·야간·DST 추가, 둘 다는 복잡도 최고 | 국내가 안전·단순 | Domain Schema 전 |
+| 거래 시장 | 미국주식 | 환율·야간 운영·DST·미국 세션 복잡도 수용 | 실행·데이터 계약에 미국 시장 시간 필요 | 결정 완료: ADR-0006 |
 | 초기 종목 수 | 유동성 높은 10~20개 | 5개는 표본 부족, 50개 이상은 Rate Limit·뉴스 부담 | 적을수록 운영 단순 | Collector 계약 전 |
 | Allowlist | 대형·고유동성 보통주, 경고·정지 제외 | ETF 포함 시 자산·섹터 모델 확장 | 엄격한 목록 권장 | Policy 모델 전 |
-| 전략 | 결정론적 저회전율 전략 1개 | 평균회귀·추세·다중전략; 다중은 원인 추적 어려움 | 단일 전략이 검증 용이 | Backtest 설계 전 |
+| 전략 | 외부 정책 시스템이 소유, 구체 전략은 `TBD` | 이 저장소에 중복 구현하면 소유권·버전 충돌 | 실행 계층은 정책 근거·버전만 검증 | 외부 주문 의도 계약 전 |
 | 계산 주기 | 1분 특징, 5분 신호 | 일봉은 안전·단순, 초 단위는 REST 부담 | 낮은 빈도 권장 | Event Schema 전 |
 | 데이터 단위 | 공식 1분봉·일봉 우선 | 최근 체결 REST는 완전 Tick 아님 | 과장 방지 | Collector 설계 전 |
 | Event Schema | Avro+Registry PoC | Protobuf는 생성 타입 강점, Decimal 별도 모델 | 둘 다 중간 | 계약 구현 전 |

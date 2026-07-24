@@ -6,12 +6,20 @@
 
 - 단계: 1단계 저장소 기반 Gate 통과, 2단계 안전 도메인 계약 진행 중
 - 기본 거래 상태: 실주문 불가
-- 저장소 상태: Java/Python Decimal·시간·식별자·상태 계약, Trading Core·Order Executor 골격, Mock-only Gate와 CI 존재
-- 운영 목표: 안전 검증 단계를 통과한 뒤 보수적인 `live-auto`
+- 확정 시장·Broker: 미국주식, Toss Securities Open API
+- 저장소 상태: Java/Python Decimal·시간·Instrument·상태 계약, Mock-only 기본 Gate, 기본 구성에 연결되지 않은 Toss Adapter 기반
+- 운영 목표: 외부 정책 시스템의 주문 의도를 안전하게 검증·실행하고 단계별 승인 후 실거래
 
-시장·전략·정책 수치·뉴스 공급자·LLM 공급자 등은 아직 확정하지 않았다. `docs/DECISIONS_PENDING.md`를 기준으로 결정한다.
+수익 전략과 수익 목적의 정책은 다른 환경이 소유한다. 이 저장소는 실행 안전
+정책, 주문 멱등성, 상태 복구와 Broker 연동을 소유한다. 주문 종류·한도·시간외
+거래, Event Schema, 뉴스·LLM 공급자 등은 아직 확정하지 않았다.
+`docs/DECISIONS_PENDING.md`를 기준으로 결정한다.
 
-현재 코드에는 Toss Endpoint·SDK·Credential 입력·계좌 조회·실주문 기능이 없다. 실행 모드는 `mock-only` 하나뿐이고 Order Executor에는 외부 네트워크 능력이 없는 `MockBrokerGateway`만 존재한다. 수익 목적의 전략·정책 수치는 아직 구현하지 않았다.
+현재 코드에는 공식 OAS 1.2.4 기반 OAuth·계좌 목록·미국주식 주문 생성·조회·취소
+Adapter와 환경 자격증명 입력 Port가 있다. 다만 기본 실행 모드는 `mock-only`
+하나뿐이고 애플리케이션은 외부 네트워크 능력이 없는 `MockBrokerGateway`만
+생성한다. 실제 자격증명·계좌정보는 없으며 Toss 서버 호출과 실주문도 수행하지
+않았다.
 
 ## 문서 읽기 순서
 
@@ -64,12 +72,14 @@ mvn --batch-mode --no-transfer-progress verify
 make test
 ```
 
-`make verify`는 필수 저장소 구조, Markdown 상대 링크, 비밀 파일·하드코딩 의심값, Mock-only JSON 계약과 Order Executor의 외부 Endpoint 부재를 검사한다. CI는 Pull Request와 `main` push에서 같은 검증을 반복한다.
+`make verify`는 필수 저장소 구조, Markdown 상대 링크, 비밀 파일·하드코딩 의심값,
+기본 Mock-only 설정, Toss OAS 기준 계약과 Order Executor 기본 Bean을 검사한다.
+CI는 Pull Request와 `main` push에서 같은 검증을 반복한다.
 
 ## 저장소 구조
 
 ```text
-apps/                 Java Trading Core와 격리된 Mock-only Order Executor
+apps/                 Java Trading Core와 격리된 기본 Mock-only Order Executor
 contracts/            빌드·상태 전이·Event·내부 API·Broker Adapter 계약
 libs/java-domain/     Decimal·UTC·식별자·상태 머신·실행 모드
 libs/python-contracts/ Decimal·UTC·식별자·상태 머신·실행 모드
@@ -78,4 +88,7 @@ tests/                Contract·Replay·Load·장애 테스트 경계
 fixtures/synthetic/   실계좌 정보가 없는 합성 데이터 전용
 ```
 
-이벤트 wire format과 거래 시장·Instrument Schema는 아직 `TBD`다. 현재 Java/Python 타입과 상태 전이 CSV는 언어 내부 안전 계약이며 Avro 또는 Protobuf 확정으로 해석하지 않는다.
+이벤트 wire format은 아직 `TBD`다. 미국주식 Instrument의 시장·시간대·통화만
+확정됐으며 정확한 거래소·세션·종목 메타데이터 Schema는 후속 계약이다. 현재
+Java/Python 타입과 상태 전이 CSV는 언어 내부 안전 계약이며 Avro 또는 Protobuf
+확정으로 해석하지 않는다.

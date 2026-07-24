@@ -18,6 +18,8 @@ from solo_contracts import BrokerOrderStatus  # noqa: E402
 from solo_contracts import BrokerStateEvidence  # noqa: E402
 from solo_contracts import BrokerSubmissionCertainty  # noqa: E402
 from solo_contracts import InvalidStateTransitionError  # noqa: E402
+from solo_contracts import Instrument  # noqa: E402
+from solo_contracts import Market  # noqa: E402
 from solo_contracts import ObservedTime  # noqa: E402
 from solo_contracts import OrderCandidateId  # noqa: E402
 from solo_contracts import OrderCandidateStatus  # noqa: E402
@@ -59,6 +61,16 @@ class DecimalValueTypesTest(unittest.TestCase):
 
 
 class IdentifierAndTradingTimeTest(unittest.TestCase):
+    def test_미국주식instrument는시장시간대와통화를고정한다(self) -> None:
+        instrument = Instrument.us_equity("brk.b")
+
+        self.assertEqual("BRK.B", instrument.symbol)
+        self.assertEqual("America/New_York", instrument.market.exchange_zone)
+        self.assertEqual("USD", instrument.market.settlement_currency)
+        self.assertIs(Market.US_EQUITIES, instrument.market)
+        with self.assertRaises(ValueError):
+            Instrument.us_equity("AAPL/USD")
+
     def test_같은uuid라도업무식별자타입은다르다(self) -> None:
         raw_id = "00000000-0000-0000-0000-000000000001"
 

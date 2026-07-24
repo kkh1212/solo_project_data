@@ -14,15 +14,18 @@
 - Java 25·Spring Boot 4.1.0·Maven 3.9.x·Python 3.12 기준선과 CI 구성
 - Java/Python `Money`, UTC 시간, 언어 내부 Event Envelope 최소 계약
 - Trading Core와 격리된 Order Executor 골격, `mock-only` 시작 Gate
-- 외부 네트워크 능력이 없는 `MockBrokerGateway`만 존재
+- 미국주식 시장, `America/New_York`, `USD` Instrument 최소 계약
+- 최종 Broker는 Toss Securities Open API, 수익 정책은 외부 시스템 소유
+- 기본 Bean은 외부 네트워크 능력이 없는 `MockBrokerGateway`
+- 기본 구성에 연결되지 않은 OAuth·계좌 목록·주문 생성·조회·취소 Toss Adapter
 - 문서 링크·Secret·Mock-only 계약 검증과 Java/Python 단위 테스트
 - 빌드 기준 계약과 동적 Maven 의존성 버전 차단
 - `Price`·`Quantity`·`Ratio`, 거래 시각, 타입이 있는 업무 UUID
 - 언어 중립 상태 전이 CSV와 Java/Python Candidate·Intent·Reservation·Broker Order 상태 머신
 - `UNKNOWN` Broker Order의 Reconciliation 강제와 Reservation 해제·만료 차단
-- 실제 Credential·API 호출·주문 없음
+- 실제 Credential·Toss 서버 호출·실계좌 조회·주문 없음
 - 기본 거래 모드는 코드와 JSON 계약 모두 실주문 불가
-- 시장·전략·정책 수치·공급자 등은 `TBD`
+- 주문 종류·한도·시간외 거래·Event Schema 등은 `TBD`
 - PostgreSQL·Kafka·Object Storage·Airflow·dbt 인프라는 아직 없음
 
 2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186)과 2단계 안전 계약 CI Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
@@ -95,12 +98,29 @@ Maven Wrapper는 로컬 JDK·Maven 설치 수요와 승인 전에는 추가하�
 - 제출 여부 `UNKNOWN` Reservation의 해제·만료 금지
 - `UNKNOWN` Broker Order의 직접 정상화 금지와 Reconciliation 근거 강제
 - 커밋 `498013b`의 GitHub Actions Run #3에서 Java/Python·Contract Test 통과
+- 미국주식 Instrument, `America/New_York`, `USD` 계약
+- [ADR-0006](adr/0006-us-toss-execution-boundary.md)으로 외부 수익 정책과
+  이 저장소의 실행 책임 분리
+- 2026-07-24 공식 OAS 1.2.4 기준 계약과 SHA-256 기록
+- 기본 구성에 연결되지 않은 JDK HttpClient·Jackson 3 기반 Toss Adapter
+- OAuth Token, 계좌 Sequence, 미국주식 주문 생성·조회·취소 구현
+- 주문별 만료 승인과 네트워크·계좌·Kill·정책·데이터·Reconciliation 다중 Gate
+- `clientOrderId` 필수화, 공식 주소·Loopback 제한, 자동 재시도 금지
+- 409·429·5xx·Timeout·알 수 없는 상태를 `UNKNOWN`으로 처리하는 Mock HTTP Test
 
 ### 다음 작업
 
-1. 거래 시장을 결정한 뒤 Instrument·시장 시간 계약 구현
-2. Avro/Protobuf 작은 PoC와 ADR 후 Event wire Schema 구현
-3. 수익 전략·정책 수치는 계속 `TBD`로 두고 안전 계약의 호환성·경계 테스트를 먼저 확장
+1. 외부 정책 시스템의 불변 주문 의도 필드·서명/상호 인증·Transport 계약 결정
+2. 계좌 별칭, Inbox/Outbox, 내부 장기 멱등성, 주문 시도 Journal과
+   Reconciliation 저장 모델 구현
+3. 미국 시장 캘린더·DST·세션·종목 메타데이터 계약과 공식 조회 Adapter 구현
+4. Toss 주문 정정의 승인·멱등성·모호한 응답 복구 계약 확정 후 구현
+5. Avro/Protobuf 작은 PoC와 ADR 후 Event wire Schema 구현
+6. 운영 Secret Manager·등록 IP·읽기 전용 실계좌 검증 절차는 별도 승인 후 수행
+
+수익 전략·수익 목적 정책은 외부 환경의 책임으로 두며 이 단계에서 중복
+구현하지 않는다. 실제 주문은 저장 기반 멱등성·Reconciliation과 운영 Gate가
+준비된 뒤 개별 주문 승인을 통해 시작한다. `live-auto`는 계속 후속 단계다.
 
 ## 기술 도입 시점
 

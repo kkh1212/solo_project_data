@@ -158,12 +158,14 @@ Kill ACK 지연과 ACK 이후 제출 수를 측정한다. 자동 전량 청산�
 | Limited Auto | 백업 복구·실패 주입·SLO·Runbook·별도 사용자 승인 |
 | Live Auto | 장기간 안전 지표, 다중 활성 조건, 운영 환경 분리 |
 
-## 1단계 구현 기준선
+## 저장소 구현 기준선
 
 `CONFIRMED` 현재 자동 검증은 다음과 같다.
 
-- `scripts/verify_repository.py`: 필수 구조, Markdown 링크, 비밀 파일·하드코딩 의심값, Mock-only 계약, Order Executor 외부 Endpoint 부재
-- Java JUnit: `BigDecimal` 정확성·명시적 반올림·통화 불일치, 원본 offset/UTC, Mock-only 설정과 외부 Broker 능력 차단
+- `scripts/verify_repository.py`: 필수 구조, Markdown 링크, 비밀 파일·하드코딩
+  의심값, 기본 Mock-only 설정·Bean과 Toss OAS 추출 계약
+- Java JUnit: `BigDecimal` 정확성·명시적 반올림·통화 불일치, 원본
+  offset/UTC, Mock-only 시작 Gate, 미국주식 Instrument와 Toss Adapter
 - Python `unittest`: `Decimal` 강제·binary float 거절·명시적 반올림·UTC·Event Envelope·Mock-only JSON 계약
 - GitHub Actions: Pull Request와 `main` push에서 저장소/Python 검증과 Maven 전체 `verify`
 
@@ -184,8 +186,17 @@ pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 
 - `UNKNOWN` Broker Order의 직접 정상 상태 전이 거절
 - `RECONCILIATION_REQUIRED` 복구 시 Reconciliation 근거 강제
 - 언어 중립 `state-transitions.csv`와 Java/Python 전이 집합 일치
+- 미국주식 심볼 정규화, `America/New_York`, `USD`의 Java/Python 일치
+- Toss 주문의 필수 `clientOrderId`, Decimal 문자열과 미국주식 가격·수량 규칙
+- 주문 승인의 계좌·`clientOrderId`·만료 시각 Binding과 다중 Gate
+- OAuth·계좌 목록·주문 생성·조회·취소의 Loopback Mock HTTP 계약
+- 명시적 4xx 거절과 409·Timeout의 `UNKNOWN` 분류, 자동 재시도 없음
+- 알 수 없는 Broker Enum을 위험한 정상값으로 매핑하지 않음
+- Kill 중에도 직접 주문 조회·취소에 사용하는 계좌 접근 Gate 유지
 
-시장·Instrument·Event wire Schema 호환성 테스트는 해당 `TBD` 결정 전이므로 아직 포함하지 않는다.
+정확한 거래소·세션·시장 캘린더와 Event wire Schema 호환성 테스트는 아직
+포함하지 않는다. Toss 테스트는 합성 값과 Loopback만 사용하며 실제 API·계좌를
+호출하지 않는다.
 
 2026-07-24 커밋 `498013b`의 GitHub Actions Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337)에서 저장소·Python 19개 테스트와 Java 25 Maven 전체 `verify`가 통과했다.
 

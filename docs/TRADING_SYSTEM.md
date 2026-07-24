@@ -3,6 +3,7 @@
 ## 핵심 원칙
 
 - 추천은 분석 결과이며 주문 명령이 아니다.
+- 외부 정책 시스템의 출력도 Broker 명령이 아니라 검증할 주문 제안이다.
 - 정책·리스크 엔진이 통과시킨 실행 가능 객체만 Order Intent가 된다.
 - AI가 매수 의견을 내도 정책·리스크가 거절하면 주문하지 않는다.
 - 브로커가 실제로 허용하는 상태가 내부 캘린더보다 우선한다.
@@ -15,6 +16,7 @@
 |---|---|---|
 | Strategy Signal | 결정론적 전략의 분석 결과 | 특징 계산 후 |
 | Recommendation | 등급·근거·위험을 가진 분석 결과 | 전략·뉴스 분석 후 |
+| External Policy Proposal | 외부 정책 버전·근거·만료 시각과 주문 속성을 가진 제안 | 외부 정책 평가 후 |
 | Order Candidate | 정책·리스크 평가 대상 주문 후보 | 전략이 주문을 제안할 때 |
 | Risk Decision | 정책·리스크의 규칙별 판정 Snapshot | Candidate 평가 시 |
 | Risk Reservation | 승인된 Intent가 사용할 현금·매도수량·노출 한도의 예약 | Decision·Intent와 같은 DB 트랜잭션 |
@@ -73,13 +75,30 @@ SUBMITTING
 
 `CONFIRMED` 2단계 구현은 [언어 중립 상태 전이 계약](../contracts/domain/state-transitions.csv)을 Java/Python이 공유한다. `UNKNOWN`은 `RECONCILIATION_REQUIRED`를 거친 뒤 Reconciliation 근거가 있을 때만 관측된 정상·종결 상태로 복구할 수 있다. 제출 여부가 `UNKNOWN`이면 연결된 Reservation을 `RELEASED` 또는 `EXPIRED`로 바꾸지 않는다.
 
-이 구현은 실제 Broker 상태 코드를 추측하거나 주문 제출 기능을 제공하지 않는다.
+Toss Adapter는 공식 주문 상태의 확인된 일부만 내부 상태로 매핑하고 알 수 없는
+코드는 `UNKNOWN`으로 둔다. Adapter 코드는 주문 제출 기능을 제공하지만 기본
+애플리케이션에는 연결되지 않아 현재 실행으로 실주문할 수 없다.
+
+## 외부 정책 입력 경계
+
+`CONFIRMED` 수익 전략과 수익 목적 정책은 다른 환경이 소유한다. 외부 입력은
+최소한 다음 의미를 제공해야 한다.
+
+- 전역 고유 주문 제안 ID와 정책 ID·버전
+- 생성 시각·만료 시각과 근거 데이터 버전/hash
+- 미국주식 Instrument, 매수·매도, 주문 유형, 수량 또는 금액, 지정가
+- 계좌번호가 아닌 내부 계좌 별칭
+- 원본 무결성과 호출 주체를 검증할 인증 정보
+
+정확한 Schema, Transport, 서명·상호 인증 방식은 `TBD`다. Trading Core는 이
+입력을 바로 Broker 요청으로 전달하지 않고 Candidate로 변환한 뒤 실행 안전
+정책, Reservation과 감사 기록을 적용한다.
 
 ## 자동 주문 흐름
 
 ```mermaid
 flowchart TD
-    SIG["Signal·Recommendation"] --> CAND["Order Candidate"]
+    SIG["인증된 External Policy Proposal"] --> CAND["Order Candidate"]
     CAND --> SNAP["가격·시장·계좌·정책 Snapshot"]
     SNAP --> MODE{"Mode·Kill 정상?"}
     MODE -->|아니오·불명| BLOCK["BLOCKED_UNCERTAIN"]
@@ -181,7 +200,9 @@ changed_by / change_reason / approved_by
 created_at / content_hash
 ```
 
-정책은 자유로운 동적 코드가 아니라 타입이 있는 정책 구현과 검증된 파라미터로 구성한다. 파라미터는 코드에 흩어져 하드코딩하지 않지만, 안전 중요 계산 자체를 임의 DSL이나 AI에 맡기지 않는다.
+외부 수익 정책은 외부 시스템의 버전과 근거를 보존한다. 이 저장소가 소유하는
+실행 안전 정책은 자유로운 동적 코드가 아니라 타입이 있는 구현과 검증된
+파라미터로 구성한다. 안전 중요 계산 자체를 임의 DSL이나 AI에 맡기지 않는다.
 
 충돌 우선순위는 다음과 같다.
 

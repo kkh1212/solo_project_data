@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TD
-    EXT["외부 비신뢰 영역<br/>Toss·News·LLM"] --> ING["수집·검증 영역<br/>Collectors·Raw Kafka·Sanitizer"]
+    EXT["외부 비신뢰 영역<br/>Toss·News·LLM·외부 정책"] --> ING["수집·검증 영역<br/>Collectors·Raw Kafka·Sanitizer"]
     ING --> DATA["내부 데이터 영역<br/>Trading Core·PostgreSQL·Marts"]
     DATA --> AI["AI 제한 영역<br/>Harness·Read-only Tools"]
     DATA --> EXEC["최고 신뢰 영역<br/>Order Executor·Credential·Direct Kill"]
@@ -22,6 +22,7 @@ flowchart TD
 | 주체 | 허용 | 금지 |
 |---|---|---|
 | Market Collector | 시세·시장 정보 조회 | 계좌·주문 |
+| 외부 정책 시스템 | 버전·근거·만료 시각이 있는 주문 의도 제안 | Broker Credential·Broker 직접 호출·실행 Gate 우회 |
 | Trading Core | 정책·Intent·Reservation·내부 상태 | Broker Credential |
 | Order Executor | 제한된 Intent·Reservation 조회와 계좌·주문 API | AI 판단·임의 전략 |
 | Airflow | 배치 DB·Object Storage, 제한된 Reconciliation 요청 | Broker Credential |
@@ -42,7 +43,11 @@ Kafka ACL은 `order.intent.v1` Producer를 Trading Core Outbox, Consumer를 Orde
 - Credential 회전과 폐기, 허용 IP, 토큰 만료 대응을 Runbook으로 관리한다.
 - 개발·Shadow·운영 자격증명을 공유하지 않는다.
 
-`CONFIRMED` 1단계 저장소 검증은 `.env`, Private Key 형식, 하드코딩된 Token·Secret 의심값을 차단한다. 이 검사는 전용 Secret Scanner를 대체한다고 주장하지 않으며, 현재 코드에는 Credential 입력과 실제 Broker Endpoint가 없다.
+`CONFIRMED` 저장소 검증은 `.env`, Private Key 형식, 하드코딩된
+Token·Secret 의심값을 차단한다. 이 검사는 전용 Secret Scanner를 대체한다고
+주장하지 않는다. 현재 코드에는 Order Executor 전용 환경 Credential Provider와
+공식 Toss Endpoint 상수가 있지만 기본 애플리케이션에 연결되지 않았고 실제
+Credential 값도 없다.
 
 ## 실거래 다중 활성 조건
 
@@ -82,6 +87,7 @@ Kafka ACL은 `order.intent.v1` Producer를 Trading Core Outbox, Consumer를 Orde
 | Credential 유출 | Executor 격리, Secret Manager, egress·DB 최소 권한, 마스킹 |
 | 정책 우회 | AI·Dashboard와 정책 실행 경로 분리, Executor 재검증 |
 | 잘못된 정책 활성화 | Schema 검증, 승인 상태, 충돌 검사, 버전·hash·감사 |
+| 외부 정책 의도 위·변조·Replay | 상호 인증·서명 `TBD`, Schema·만료·고유 Intent 검증, Inbox 멱등성 |
 | Prompt Injection | 뉴스 비신뢰 태깅, Tool ID 제한, 자유 도구 금지, 출력 검증 |
 | 데이터 오염 | Raw 보존, checksum, DQ, 출처·시각 분리, Replay |
 | 수동 앱 주문 | 주기적 계좌·주문 Reconciliation |

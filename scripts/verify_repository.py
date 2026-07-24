@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""1단계 저장소 정책, 링크, 비밀정보와 Mock-only 계약을 검증한다."""
+"""저장소 정책, 링크, 비밀정보와 기본 Fail-Closed 계약을 검증한다."""
 
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ REQUIRED_PATHS = (
     ".github/workflows/ci.yml",
     "apps/trading-core/pom.xml",
     "apps/order-executor/pom.xml",
+    "contracts/broker-adapter/toss-oas-baseline.json",
     "contracts/build/runtime-baseline.json",
     "contracts/domain/state-transitions.csv",
     "contracts/events/README.md",
@@ -124,14 +125,85 @@ def verify_mock_only_contract(errors: list[str]) -> None:
     if properties.get("externalBrokerEnabled", {}).get("const") is not False:
         errors.append("실행 모드 계약은 외부 Broker를 비활성화해야 함")
 
-    executor_main = PROJECT_ROOT / "apps" / "order-executor" / "src" / "main"
-    for path in executor_main.rglob("*"):
-        if not path.is_file():
-            continue
-        text = path.read_text(encoding="utf-8")
-        if "http://" in text or "https://" in text:
-            relative_path = path.relative_to(PROJECT_ROOT)
-            errors.append(f"Order Executor 외부 Endpoint 의심 내용: {relative_path}")
+    application_config = (
+        PROJECT_ROOT
+        / "apps"
+        / "order-executor"
+        / "src"
+        / "main"
+        / "resources"
+        / "application.yml"
+    ).read_text(encoding="utf-8")
+    if "mode: mock-only" not in application_config:
+        errors.append("Order Executor 기본 설정은 mock-only여야 함")
+
+    application_source = (
+        PROJECT_ROOT
+        / "apps"
+        / "order-executor"
+        / "src"
+        / "main"
+        / "java"
+        / "io"
+        / "github"
+        / "soloprojectdata"
+        / "executor"
+        / "OrderExecutorApplication.java"
+    ).read_text(encoding="utf-8")
+    if "return new MockBrokerGateway()" not in application_source:
+        errors.append("Order Executor 기본 Bean은 MockBrokerGateway여야 함")
+    if "new TossBrokerGateway" in application_source:
+        errors.append("Order Executor 기본 구성에 TossBrokerGateway를 연결할 수 없음")
+
+
+def verify_toss_contract(errors: list[str]) -> None:
+    baseline_path = (
+        PROJECT_ROOT
+        / "contracts"
+        / "broker-adapter"
+        / "toss-oas-baseline.json"
+    )
+    try:
+        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        errors.append(f"Toss OAS 기준 계약을 읽을 수 없음: {error}")
+        return
+
+    expected = {
+        "oasVersion": "1.2.4",
+        "baseUri": "https://openapi.tossinvest.com",
+        "accountHeader": "X-Tossinvest-Account",
+    }
+    for field, expected_value in expected.items():
+        if baseline.get(field) != expected_value:
+            errors.append(
+                f"Toss 기준 계약 불일치: {field}={baseline.get(field)}, "
+                f"expected={expected_value}"
+            )
+    client_order_id = baseline.get("clientOrderId", {})
+    if client_order_id.get("requiredByInternalContract") is not True:
+        errors.append("Toss clientOrderId는 내부 계약에서 필수여야 함")
+    if client_order_id.get("brokerIdempotencyWindowMinutes") != 10:
+        errors.append("Toss Broker 멱등성 기준은 확인된 10분이어야 함")
+
+    source_path = (
+        PROJECT_ROOT
+        / "apps"
+        / "order-executor"
+        / "src"
+        / "main"
+        / "java"
+        / "io"
+        / "github"
+        / "soloprojectdata"
+        / "executor"
+        / "toss"
+        / "TossApiContract.java"
+    )
+    source = source_path.read_text(encoding="utf-8")
+    for expected_literal in expected.values():
+        if expected_literal not in source:
+            errors.append(f"Toss Java 계약 상수 누락: {expected_literal}")
 
 
 def verify_build_baseline(errors: list[str]) -> None:
@@ -278,6 +350,7 @@ def main() -> int:
     verify_secret_policy(files, errors)
     verify_markdown_links(files, errors)
     verify_mock_only_contract(errors)
+    verify_toss_contract(errors)
     verify_build_baseline(errors)
     verify_domain_contract(errors)
 
@@ -287,7 +360,8 @@ def main() -> int:
         return 1
 
     print(
-        "저장소 검증 통과: 구조, 링크, Secret, 빌드 기준, Mock-only, 도메인 계약"
+        "저장소 검증 통과: 구조, 링크, Secret, 빌드 기준, "
+        "기본 Mock-only, Toss 기준, 도메인 계약"
     )
     return 0
 

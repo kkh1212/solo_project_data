@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Toss Securities Open API implementation baseline",
+  "status": "CONFIRMED",
+  "checkedAt": "2026-07-24",
+  "source": "https://openapi.tossinvest.com/openapi-docs/latest/openapi.json",
+  "openapiVersion": "3.1.0",
+  "oasVersion": "1.2.4",
+  "sourceSha256": "7000d89ea3d783b0fa36d32e31750e85e139098306dbfce53a75fc4891019f1b",
+  "baseUri": "https://openapi.tossinvest.com",
+  "operations": {
+    "issueToken": "POST /oauth2/token",
+    "listAccounts": "GET /api/v1/accounts",
+    "createOrder": "POST /api/v1/orders",
+    "getOrder": "GET /api/v1/orders/{orderId}",
+    "modifyOrder": "POST /api/v1/orders/{orderId}/modify",
+    "cancelOrder": "POST /api/v1/orders/{orderId}/cancel"
+  },
+  "accountHeader": "X-Tossinvest-Account",
+  "clientOrderId": {
+    "requiredByInternalContract": true,
+    "brokerMaximumLength": 36,
+    "brokerIdempotencyWindowMinutes": 10
+  },
+  "usEquities": {
+    "currency": "USD",
+    "fractionalQuantity": {
+      "allowedFor": "MARKET SELL",
+      "maximumScale": 6
+    },
+    "limitPriceMaximumScale": {
+      "belowOneDollar": 4,
+      "oneDollarOrAbove": 2
+    },
+    "amountOrder": "MARKET only, regular session only",
+    "modifyOrder": "price only"
+  },
+  "sandbox": {
+    "status": "TBD",
+    "note": "현재 OAS에서 공식 Sandbox 또는 Paper endpoint를 확인하지 못함"
+  }
+}

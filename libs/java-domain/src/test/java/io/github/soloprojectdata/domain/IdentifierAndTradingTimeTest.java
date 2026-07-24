@@ -2,6 +2,7 @@ package io.github.soloprojectdata.domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.soloprojectdata.domain.id.OrderCandidateId;
 import io.github.soloprojectdata.domain.id.OrderIntentId;
@@ -40,6 +41,19 @@ class IdentifierAndTradingTimeTest {
         assertEquals(
                 Instant.parse("2026-07-24T00:00:00Z"),
                 tradingTime.observedTime().sourceInstant()
+        );
+    }
+
+    @Test
+    void 미국주식Instrument는시장시간대와통화를고정한다() {
+        Instrument instrument = Instrument.usEquity("brk.b");
+
+        assertEquals("BRK.B", instrument.symbol());
+        assertEquals("America/New_York", instrument.market().exchangeZone().getId());
+        assertEquals("USD", instrument.market().settlementCurrency().getCurrencyCode());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Instrument.usEquity("AAPL/USD")
         );
     }
 }
