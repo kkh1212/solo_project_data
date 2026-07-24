@@ -21,7 +21,7 @@
 - 시장·전략·정책 수치·공급자 등은 `TBD`
 - PostgreSQL·Kafka·Object Storage·Airflow·dbt 인프라는 아직 없음
 
-2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다.
+2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
 
 ## 단계
 
@@ -74,13 +74,13 @@
 - Trading Core·Order Executor의 `mock-only` Fail-Closed 시작 Gate 작성
 - 외부 Endpoint·Credential·실주문 메서드가 없는 Mock Broker 경계 작성
 - GitHub Actions, 문서 링크·Secret·계약 검증, 실제 검증 명령 추가
+- 커밋 `383b78e`의 GitHub Actions Run #1에서 두 CI Job 통과
 
 ### 다음 작업
 
-1. 첫 GitHub Actions 실행에서 Java 25 Maven 빌드 결과를 확인하고 실패 시 1단계 범위에서 수정
-2. 의존성 트리와 CI Artifact 재현성 기준을 기록하고 Maven Wrapper 필요성을 검토
-3. Python 서비스가 실제로 필요해지는 시점에 pytest·패키징 도입 필요성을 확인하고, 설치가 필요하면 사전 승인
-4. 1단계 Gate를 모두 확인한 뒤 2단계 전에 시장·계산 주기·Event Schema `TBD`를 사용자 결정으로 해소
+1. 의존성 트리와 CI Artifact 재현성 기준을 기록하고 Maven Wrapper 필요성을 검토
+2. Python 서비스가 실제로 필요해지는 시점에 pytest·패키징 도입 필요성을 확인하고, 설치가 필요하면 사전 승인
+3. 1단계 Gate를 모두 확인한 뒤 2단계 전에 시장·계산 주기·Event Schema `TBD`를 사용자 결정으로 해소
 
 ## 기술 도입 시점
 

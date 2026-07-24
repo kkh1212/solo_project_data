@@ -167,6 +167,8 @@ Kill ACK 지연과 ACK 이후 제출 수를 측정한다. 자동 전량 청산�
 - Python `unittest`: `Decimal` 강제·binary float 거절·명시적 반올림·UTC·Event Envelope·Mock-only JSON 계약
 - GitHub Actions: Pull Request와 `main` push에서 저장소/Python 검증과 Maven 전체 `verify`
 
+2026-07-24 최초 GitHub Actions Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186)에서 두 Job이 모두 통과했다. 이 결과는 Mock-only 기반의 빌드 가능성을 검증하지만 후속 단계의 Replay·동시성·주문 상태 안전성을 검증한 것으로 해석하지 않는다.
+
 pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 해당 의존성과 기반이 필요한 후속 작업이다. 현재 테스트 수단을 미래 도입 결정으로 과장하지 않는다.
 
 ## 완료 보고
