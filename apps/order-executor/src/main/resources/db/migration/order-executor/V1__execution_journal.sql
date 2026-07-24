@@ -175,7 +175,8 @@ BEGIN
         NEW.request_sha256,
         NEW.started_at
     ) THEN
-        RAISE EXCEPTION 'order_attempt_journal identity cannot change';
+        RAISE EXCEPTION 'order_attempt_journal identity cannot change'
+            USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
 END;

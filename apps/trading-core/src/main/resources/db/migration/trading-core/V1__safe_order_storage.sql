@@ -194,7 +194,8 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    RAISE EXCEPTION '% is immutable', TG_TABLE_NAME;
+    RAISE EXCEPTION '% is immutable', TG_TABLE_NAME
+        USING ERRCODE = '23514';
 END;
 $$;
 
@@ -244,7 +245,8 @@ BEGIN
         NEW.expires_at,
         NEW.created_at
     ) THEN
-        RAISE EXCEPTION 'order_intent immutable fields cannot change';
+        RAISE EXCEPTION 'order_intent immutable fields cannot change'
+            USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
 END;
@@ -276,7 +278,8 @@ BEGIN
         NEW.payload,
         NEW.created_at
     ) THEN
-        RAISE EXCEPTION 'transactional_outbox payload cannot change';
+        RAISE EXCEPTION 'transactional_outbox payload cannot change'
+            USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
 END;
