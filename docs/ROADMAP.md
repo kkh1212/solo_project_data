@@ -30,7 +30,7 @@
   Repository와 CI 통합 테스트
 - Kafka·Object Storage·Airflow·dbt 인프라는 아직 없음
 
-2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java와 PostgreSQL 통합 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186), 2단계 안전 계약 CI Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337), Toss Adapter CI Run [#5](https://github.com/kkh1212/solo_project_data/actions/runs/30071040816), 외부 Proposal 계약 CI Run [#7](https://github.com/kkh1212/solo_project_data/actions/runs/30071682041)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
+2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java와 PostgreSQL 통합 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186), 2단계 안전 계약 CI Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337), Toss Adapter CI Run [#5](https://github.com/kkh1212/solo_project_data/actions/runs/30071040816), 외부 Proposal 계약 CI Run [#7](https://github.com/kkh1212/solo_project_data/actions/runs/30071682041), PostgreSQL 주문 원장 CI Run [#10](https://github.com/kkh1212/solo_project_data/actions/runs/30073763292)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
 
 ## 단계
 
@@ -135,6 +135,8 @@ Maven Wrapper는 로컬 JDK·Maven 설치 수요와 승인 전에는 추가하�
   하나만으로 저장·실행 경로가 활성화되지 않도록 유지
 - 실제 계좌번호는 저장하지 않고 Toss `accountSeq`는 Executor Schema에만
   제한하며, 실제 Credential·Toss 호출·실주문은 계속 없음
+- 커밋 `d862121`의 GitHub Actions Run #10에서 PostgreSQL 18.4 Flyway,
+  Core·Executor Spring JDBC 통합 테스트와 기존 전체 검증 통과
 
 ### 다음 작업
 

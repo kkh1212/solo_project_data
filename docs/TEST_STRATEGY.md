@@ -232,6 +232,12 @@ Loopback Mock HTTP 테스트가 포함되며 실제 Toss API는 호출하지 않
 만료·정책 근거·계좌 별칭·미국주식 주문 형태와 Toss 변환을 검증하며 실제 외부
 정책 시스템이나 Toss API를 호출하지 않았다.
 
+2026-07-24 커밋 `d862121`의 GitHub Actions Run [#10](https://github.com/kkh1212/solo_project_data/actions/runs/30073763292)에서 저장소·Python
+검증과 Java 25 Maven 전체 `verify`가 통과했다. Java Job은 합성 PostgreSQL
+18.4에서 두 서비스의 Flyway 마이그레이션, 원자적 Commit/Rollback, Replay
+충돌, 불변 Trigger, 단일 제출 Attempt, 수락·`UNKNOWN`·Reconciliation과
+`clientOrderId` Binding을 검증했다. 실제 계좌/API/주문은 사용하지 않았다.
+
 ## 완료 보고
 
 변경 완료 시 다음을 보고한다.
