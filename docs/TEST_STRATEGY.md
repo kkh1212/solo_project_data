@@ -200,6 +200,11 @@ pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 
 
 2026-07-24 커밋 `498013b`의 GitHub Actions Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337)에서 저장소·Python 19개 테스트와 Java 25 Maven 전체 `verify`가 통과했다.
 
+2026-07-24 커밋 `5e70fb6`의 GitHub Actions Run [#5](https://github.com/kkh1212/solo_project_data/actions/runs/30071040816)에서 저장소·Python
+20개 테스트와 Java 25 Maven 전체 `verify`가 통과했다. Java 검증에는 Toss
+주문 형식·다중 Gate·OAuth·계좌·주문 생성·조회·취소·Timeout·`UNKNOWN`
+Loopback Mock HTTP 테스트가 포함되며 실제 Toss API는 호출하지 않았다.
+
 ## 완료 보고
 
 변경 완료 시 다음을 보고한다.

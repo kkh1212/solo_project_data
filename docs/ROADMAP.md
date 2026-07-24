@@ -28,7 +28,7 @@
 - 주문 종류·한도·시간외 거래·Event Schema 등은 `TBD`
 - PostgreSQL·Kafka·Object Storage·Airflow·dbt 인프라는 아직 없음
 
-2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186)과 2단계 안전 계약 CI Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
+2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186), 2단계 안전 계약 CI Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337), Toss Adapter CI Run [#5](https://github.com/kkh1212/solo_project_data/actions/runs/30071040816)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
 
 ## 단계
 
@@ -107,6 +107,8 @@ Maven Wrapper는 로컬 JDK·Maven 설치 수요와 승인 전에는 추가하�
 - 주문별 만료 승인과 네트워크·계좌·Kill·정책·데이터·Reconciliation 다중 Gate
 - `clientOrderId` 필수화, 공식 주소·Loopback 제한, 자동 재시도 금지
 - 409·429·5xx·Timeout·알 수 없는 상태를 `UNKNOWN`으로 처리하는 Mock HTTP Test
+- 커밋 `5e70fb6`의 GitHub Actions Run #5에서 저장소/Python과 Java 25
+  Maven 전체 검증 통과
 
 ### 다음 작업
 
