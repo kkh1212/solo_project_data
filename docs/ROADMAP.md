@@ -115,6 +115,8 @@ Maven Wrapper는 로컬 JDK·Maven 설치 수요와 승인 전에는 추가하�
   생성·만료 시각과 미국주식 주문 형태 계약
 - 제안 UUID에서 Toss `clientOrderId`로 결정론적 변환
 - 미래·만료·계좌번호 형태·비정상 Decimal·주문 형태 오류의 Broker 호출 전 차단
+- 커밋 `9f5462b`의 GitHub Actions Run #7에서 저장소/Python과 Java 25
+  Maven 전체 검증 통과
 
 ### 다음 작업
 
