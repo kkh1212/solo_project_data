@@ -25,7 +25,7 @@
 - 시장·전략·정책 수치·공급자 등은 `TBD`
 - PostgreSQL·Kafka·Object Storage·Airflow·dbt 인프라는 아직 없음
 
-2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
+2026-07-24 로컬 검증 환경에는 JDK·Maven이 없어 Python과 저장소 검증만 직접 실행할 수 있다. Java 검증은 GitHub Actions에서 수행하며 로컬 시스템 패키지는 사용자 승인 없이 설치하지 않는다. 최초 CI Run [#1](https://github.com/kkh1212/solo_project_data/actions/runs/30068774186)과 2단계 안전 계약 CI Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337)에서 저장소/Python Job과 Java 25 Maven `verify` Job이 모두 통과했다.
 
 ## 단계
 
@@ -94,13 +94,13 @@ Maven Wrapper는 로컬 JDK·Maven 설치 수요와 승인 전에는 추가하�
 - Candidate·Intent·Reservation·Broker Order 상태 전이 CSV와 양 언어 구현
 - 제출 여부 `UNKNOWN` Reservation의 해제·만료 금지
 - `UNKNOWN` Broker Order의 직접 정상화 금지와 Reconciliation 근거 강제
+- 커밋 `498013b`의 GitHub Actions Run #3에서 Java/Python·Contract Test 통과
 
 ### 다음 작업
 
-1. GitHub Actions에서 새 Java 상태 머신·Contract Test를 검증
-2. 거래 시장을 결정한 뒤 Instrument·시장 시간 계약 구현
-3. Avro/Protobuf 작은 PoC와 ADR 후 Event wire Schema 구현
-4. 수익 전략·정책 수치는 계속 `TBD`로 두고 안전 계약의 호환성·경계 테스트를 먼저 확장
+1. 거래 시장을 결정한 뒤 Instrument·시장 시간 계약 구현
+2. Avro/Protobuf 작은 PoC와 ADR 후 Event wire Schema 구현
+3. 수익 전략·정책 수치는 계속 `TBD`로 두고 안전 계약의 호환성·경계 테스트를 먼저 확장
 
 ## 기술 도입 시점
 

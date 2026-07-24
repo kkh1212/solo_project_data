@@ -187,6 +187,8 @@ pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 
 
 시장·Instrument·Event wire Schema 호환성 테스트는 해당 `TBD` 결정 전이므로 아직 포함하지 않는다.
 
+2026-07-24 커밋 `498013b`의 GitHub Actions Run [#3](https://github.com/kkh1212/solo_project_data/actions/runs/30069492337)에서 저장소·Python 19개 테스트와 Java 25 Maven 전체 `verify`가 통과했다.
+
 ## 완료 보고
 
 변경 완료 시 다음을 보고한다.
