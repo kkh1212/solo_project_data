@@ -71,6 +71,10 @@ SUBMITTING
 
 내부 상태와 공식 브로커 상태는 별도 Enum으로 관리하고 Adapter에서 매핑한다. 알 수 없는 공식 상태는 안전한 종결 상태로 추측하지 않는다.
 
+`CONFIRMED` 2단계 구현은 [언어 중립 상태 전이 계약](../contracts/domain/state-transitions.csv)을 Java/Python이 공유한다. `UNKNOWN`은 `RECONCILIATION_REQUIRED`를 거친 뒤 Reconciliation 근거가 있을 때만 관측된 정상·종결 상태로 복구할 수 있다. 제출 여부가 `UNKNOWN`이면 연결된 Reservation을 `RELEASED` 또는 `EXPIRED`로 바꾸지 않는다.
+
+이 구현은 실제 Broker 상태 코드를 추측하거나 주문 제출 기능을 제공하지 않는다.
+
 ## 자동 주문 흐름
 
 ```mermaid

@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import re
 import sys
+import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -27,6 +29,8 @@ REQUIRED_PATHS = (
     ".github/workflows/ci.yml",
     "apps/trading-core/pom.xml",
     "apps/order-executor/pom.xml",
+    "contracts/build/runtime-baseline.json",
+    "contracts/domain/state-transitions.csv",
     "contracts/events/README.md",
     "contracts/internal-api/execution-mode.schema.json",
     "fixtures/synthetic/README.md",
@@ -45,6 +49,7 @@ SECRET_ASSIGNMENT = re.compile(
 PRIVATE_KEY_BLOCK = re.compile(
     "-----BEGIN " + r"(?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
 )
+MAVEN_NAMESPACE = {"m": "http://maven.apache.org/POM/4.0.0"}
 
 
 def repository_files() -> list[Path]:
@@ -129,6 +134,142 @@ def verify_mock_only_contract(errors: list[str]) -> None:
             errors.append(f"Order Executor 외부 Endpoint 의심 내용: {relative_path}")
 
 
+def verify_build_baseline(errors: list[str]) -> None:
+    baseline_path = PROJECT_ROOT / "contracts" / "build" / "runtime-baseline.json"
+    try:
+        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+        root_pom = ElementTree.parse(PROJECT_ROOT / "pom.xml").getroot()
+    except (OSError, json.JSONDecodeError, ElementTree.ParseError) as error:
+        errors.append(f"빌드 기준 계약을 읽을 수 없음: {error}")
+        return
+
+    java = baseline.get("java", {})
+    python = baseline.get("python", {})
+    expected_values = {
+        ".java-version": java.get("languageVersion"),
+        ".python-version": python.get("languageVersion"),
+    }
+    for relative_path, expected in expected_values.items():
+        actual = (PROJECT_ROOT / relative_path).read_text(encoding="utf-8").strip()
+        if actual != expected:
+            errors.append(
+                f"빌드 기준 불일치: {relative_path}={actual}, expected={expected}"
+            )
+
+    pom_parent_version = root_pom.findtext("m:parent/m:version", namespaces=MAVEN_NAMESPACE)
+    spring_boot_version = java.get("framework", {}).get("springBoot")
+    if pom_parent_version != spring_boot_version:
+        errors.append(
+            "Spring Boot 기준 불일치: "
+            f"pom={pom_parent_version}, baseline={spring_boot_version}"
+        )
+
+    pom_java_version = root_pom.findtext(
+        "m:properties/m:java.version",
+        namespaces=MAVEN_NAMESPACE,
+    )
+    if pom_java_version != java.get("languageVersion"):
+        errors.append(
+            "Java 기준 불일치: "
+            f"pom={pom_java_version}, baseline={java.get('languageVersion')}"
+        )
+
+    pom_enforcer_version = root_pom.findtext(
+        "m:properties/m:maven-enforcer-plugin.version",
+        namespaces=MAVEN_NAMESPACE,
+    )
+    baseline_enforcer_version = java.get("plugins", {}).get("mavenEnforcer")
+    if pom_enforcer_version != baseline_enforcer_version:
+        errors.append(
+            "Maven Enforcer 기준 불일치: "
+            f"pom={pom_enforcer_version}, baseline={baseline_enforcer_version}"
+        )
+
+    pom_maven_range = root_pom.findtext(
+        ".//m:requireMavenVersion/m:version",
+        namespaces=MAVEN_NAMESPACE,
+    )
+    baseline_maven_range = java.get("buildTool", {}).get("acceptedVersion")
+    if pom_maven_range != baseline_maven_range:
+        errors.append(
+            "Maven 범위 불일치: "
+            f"pom={pom_maven_range}, baseline={baseline_maven_range}"
+        )
+
+    locked_python_dependencies = [
+        line.strip()
+        for line in (PROJECT_ROOT / "requirements-dev.lock")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    baseline_python_dependencies = python.get("thirdPartyDependencies")
+    if locked_python_dependencies != baseline_python_dependencies:
+        errors.append(
+            "Python 의존성 기준 불일치: "
+            f"lock={locked_python_dependencies}, "
+            f"baseline={baseline_python_dependencies}"
+        )
+
+    for pom_path in PROJECT_ROOT.rglob("pom.xml"):
+        pom_root = ElementTree.parse(pom_path).getroot()
+        for version_element in pom_root.findall(
+            ".//m:dependencies/m:dependency/m:version",
+            namespaces=MAVEN_NAMESPACE,
+        ):
+            version = (version_element.text or "").strip()
+            if (
+                version.upper() in {"LATEST", "RELEASE"}
+                or version.startswith(("[", "("))
+            ):
+                relative_path = pom_path.relative_to(PROJECT_ROOT)
+                errors.append(
+                    f"동적 Maven 의존성 버전 금지: {relative_path} -> {version}"
+                )
+
+
+def verify_domain_contract(errors: list[str]) -> None:
+    contract_path = PROJECT_ROOT / "contracts" / "domain" / "state-transitions.csv"
+    try:
+        with contract_path.open(encoding="utf-8", newline="") as contract_file:
+            rows = list(csv.DictReader(contract_file))
+    except OSError as error:
+        errors.append(f"상태 머신 계약을 읽을 수 없음: {error}")
+        return
+
+    expected_fields = {
+        "machine",
+        "from",
+        "to",
+        "required_evidence",
+        "forbidden_submission_certainty",
+    }
+    if not rows or set(rows[0]) != expected_fields:
+        errors.append("상태 전이 계약 Header 또는 행이 올바르지 않음")
+        return
+
+    identities: set[tuple[str, str, str]] = set()
+    for row in rows:
+        identity = (row["machine"], row["from"], row["to"])
+        if not all(identity):
+            errors.append(f"상태 전이 계약 필수값 누락: {row}")
+        if identity in identities:
+            errors.append(f"상태 전이 계약 중복: {identity}")
+        identities.add(identity)
+        if (
+            row["machine"] == "riskReservation"
+            and row["to"] in {"RELEASED", "EXPIRED"}
+            and row["forbidden_submission_certainty"] != "UNKNOWN"
+        ):
+            errors.append(f"Reservation UNKNOWN 해제 Guard 누락: {identity}")
+        if (
+            row["machine"] == "brokerOrder"
+            and row["from"] == "RECONCILIATION_REQUIRED"
+            and row["required_evidence"] != "RECONCILIATION"
+        ):
+            errors.append(f"Broker 복구 Reconciliation Guard 누락: {identity}")
+
+
 def main() -> int:
     errors: list[str] = []
     files = repository_files()
@@ -137,6 +278,8 @@ def main() -> int:
     verify_secret_policy(files, errors)
     verify_markdown_links(files, errors)
     verify_mock_only_contract(errors)
+    verify_build_baseline(errors)
+    verify_domain_contract(errors)
 
     if errors:
         for error in errors:
@@ -144,7 +287,7 @@ def main() -> int:
         return 1
 
     print(
-        "저장소 검증 통과: 필수 구조, 문서 링크, Secret 정책, Mock-only 계약"
+        "저장소 검증 통과: 구조, 링크, Secret, 빌드 기준, Mock-only, 도메인 계약"
     )
     return 0
 

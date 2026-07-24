@@ -24,8 +24,11 @@ review_date
 |---|---|---|---|
 | Java 25, Spring Boot 4.1.0, Maven 3.9.x, Python 3.12 기준선 | `CONFIRMED` | 2026-07-24 | [ADR-0005](adr/0005-build-and-runtime-baseline.md) |
 | 1단계 실행 모드는 `mock-only`만 허용하고 외부 Broker 기능을 포함하지 않음 | `CONFIRMED` | 2026-07-24 | [ADR-0003](adr/0003-live-safety-boundary.md), [ADR-0005](adr/0005-build-and-runtime-baseline.md) |
+| 수익 목적의 전략·정책 수치는 후속 구현으로 두고 Decimal·상태 전이·멱등성·Reservation 등 안전 기반을 우선 | `CONFIRMED` | 2026-07-24 | 사용자 작업 순서 결정, [ROADMAP](ROADMAP.md) |
 
 이 결정은 시장·전략·정책 수치·이벤트 직렬화 형식 또는 실제 공급자 연동을 확정하지 않는다.
+
+현재 2단계는 시장과 무관한 값·시간·식별자·상태 계약만 구현한다. 거래 시장과 Event Schema가 결정되기 전에는 Instrument Schema와 Kafka wire Schema를 구현하지 않는다.
 
 ## P0: 구현 기반과 데이터 계약 전에 결정
 

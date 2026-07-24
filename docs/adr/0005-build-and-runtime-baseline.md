@@ -15,6 +15,8 @@
 - Python은 현재 개발 환경과 일치하는 3.12를 사용한다. 1단계 공통 계약은 표준 라이브러리만 사용하며 제3자 의존성 잠금 파일은 빈 상태를 명시한다.
 - CI는 GitHub-hosted 격리 러너에서 JDK 25와 Python 3.12를 준비해 동일 검증을 실행한다.
 - 로컬 JDK·Maven·Python 패키지나 시스템 구성을 자동 설치하지 않는다.
+- `contracts/build/runtime-baseline.json`과 저장소 검증으로 JDK·Maven 범위·Spring Boot BOM·Plugin·Python 의존성 기준의 불일치를 차단한다.
+- Maven Wrapper는 Bootstrap 다운로드와 로컬 Java 실행 수요가 생길 때 checksum 고정과 함께 다시 검토한다. 현재 1단계에서는 추가하지 않는다.
 - Java/Python 공통 타입은 언어 내부 불변식만 구현한다. Avro/Protobuf와 패키지 배포 방식은 후속 계약 단계의 `TBD`로 유지한다.
 
 공식 근거:
@@ -37,6 +39,7 @@
 - 현재 개발 서버에서는 Java 빌드를 바로 실행할 수 없다.
 - Maven 의존성을 최초로 받는 CI 또는 승인된 개발 환경에는 네트워크가 필요하다.
 - Python 테스트 도구가 표준 `unittest`로 제한되며 Property-based·pytest 도입은 필요성과 승인 후 진행한다.
+- Maven 전체 Transitive Dependency Lock을 제공하지 않으므로 BOM 밖 의존성이 추가되면 별도 잠금·검증 방식을 재검토해야 한다.
 
 ## 재검토 조건
 

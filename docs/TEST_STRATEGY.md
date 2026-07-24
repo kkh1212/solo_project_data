@@ -171,6 +171,22 @@ Kill ACK 지연과 ACK 이후 제출 수를 측정한다. 자동 전량 청산�
 
 pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 해당 의존성과 기반이 필요한 후속 작업이다. 현재 테스트 수단을 미래 도입 결정으로 과장하지 않는다.
 
+## 2단계 안전 계약 테스트
+
+`CONFIRMED` 현재 구현은 다음을 검증한다.
+
+- 가격·수량의 양수 조건과 비율 0~1 경계
+- 명시적 Decimal 반올림과 Python binary float 거절
+- 거래일과 원본·UTC 시각·거래소 시간대의 독립 보존
+- 동일 UUID를 Candidate와 Intent 등 다른 업무 타입으로 혼용하지 않음
+- Candidate·Intent 단계 건너뛰기와 종결 상태의 추가 전이 거절
+- 제출 여부 `UNKNOWN` Reservation의 `RELEASED`·`EXPIRED` 전이 거절
+- `UNKNOWN` Broker Order의 직접 정상 상태 전이 거절
+- `RECONCILIATION_REQUIRED` 복구 시 Reconciliation 근거 강제
+- 언어 중립 `state-transitions.csv`와 Java/Python 전이 집합 일치
+
+시장·Instrument·Event wire Schema 호환성 테스트는 해당 `TBD` 결정 전이므로 아직 포함하지 않는다.
+
 ## 완료 보고
 
 변경 완료 시 다음을 보고한다.

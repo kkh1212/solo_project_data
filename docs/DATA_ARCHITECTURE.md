@@ -67,6 +67,8 @@ broker_request_id
 
 `CONFIRMED` 1단계 구현은 Java/Python 언어 내부 `EventEnvelope`로 필수 식별자·버전·UTC 시각 불변식만 검증한다. 이는 Kafka wire Schema가 아니며 Avro/Protobuf 선택은 계속 `TBD`다.
 
+`CONFIRMED` 2단계 안전 계약은 Candidate·Decision·Reservation·Intent의 타입 UUID와 상태 전이 CSV를 추가했다. 이는 업무 객체 혼용과 잘못된 전이를 막기 위한 내부 계약이며 Instrument 또는 Event wire Schema 결정을 선행하지 않는다.
+
 ## 이벤트 Schema
 
 `RECOMMENDED` 초기 선택은 Avro와 Schema Registry다. 이유는 Kafka 중심 이벤트 진화와 Decimal logical type, Java·Python 호환성이다. Protobuf는 생성 코드가 강점이지만 Decimal을 별도 메시지로 정의해야 한다.

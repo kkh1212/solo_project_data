@@ -9,13 +9,17 @@
 
 ## 현재 상태
 
-`CONFIRMED` 현재는 **1단계 실거래 기능 없는 저장소 기반 구축 진행 중**이다.
+`CONFIRMED` 현재는 **1단계 저장소 기반 Gate 통과, 2단계 안전 도메인 계약 진행 중**이다.
 
 - Java 25·Spring Boot 4.1.0·Maven 3.9.x·Python 3.12 기준선과 CI 구성
 - Java/Python `Money`, UTC 시간, 언어 내부 Event Envelope 최소 계약
 - Trading Core와 격리된 Order Executor 골격, `mock-only` 시작 Gate
 - 외부 네트워크 능력이 없는 `MockBrokerGateway`만 존재
 - 문서 링크·Secret·Mock-only 계약 검증과 Java/Python 단위 테스트
+- 빌드 기준 계약과 동적 Maven 의존성 버전 차단
+- `Price`·`Quantity`·`Ratio`, 거래 시각, 타입이 있는 업무 UUID
+- 언어 중립 상태 전이 CSV와 Java/Python Candidate·Intent·Reservation·Broker Order 상태 머신
+- `UNKNOWN` Broker Order의 Reconciliation 강제와 Reservation 해제·만료 차단
 - 실제 Credential·API 호출·주문 없음
 - 기본 거래 모드는 코드와 JSON 계약 모두 실주문 불가
 - 시장·전략·정책 수치·공급자 등은 `TBD`
@@ -28,7 +32,7 @@
 | 단계 | 범위 | 주요 산출물 | 종료 Gate |
 |---|---|---|---|
 | 0. 설계 | 요구·경계·위협·TBD·ADR | 현재 `docs/` | 구조 기준선 승인 |
-| 1. 저장소 기반 | 저장소 규칙, 문서 검증, Java/Python 골격, CI, Mock-only 설정 | 빌드·테스트 명령, 의존성 Lock | 실주문 경로·Secret 없음, CI 통과 |
+| 1. 저장소 기반 | 저장소 규칙, 문서 검증, Java/Python 골격, CI, Mock-only 설정 | 빌드·테스트 명령, BOM·버전 기준, Python Lock | 실주문 경로·Secret 없음, CI 통과 |
 | 2. 계약·도메인 | Money·Time·Event, Instrument, 주문·Reservation 상태, Schema | 공통 계약·상태 머신 Test | Decimal·시간·호환성 Test 통과 |
 | 3. 데이터 기반 | Kafka, PostgreSQL, Object Storage, 합성 Collector | Raw→Silver, Inbox/Outbox 기반 | Replay·중복 제거·DQ 통과 |
 | 4. 특징·전략 | 결정론적 전략 1개, 비용 모델, 백테스트 | Feature·Signal·Backtest Report | Look-ahead·재현성·비용 검사 |
@@ -42,7 +46,7 @@
 | 12. Limited Auto | 소액·Allowlist·저빈도 자동화 | Limited Auto Report | 안전 지표·운영 기간 충족 |
 | 13. Live Auto | 보수적 자동거래 | 운영 SLO·Incident Review | 지속적 Gate 유지 |
 
-## 다음 구현 단계: 1단계 저장소 기반
+## 완료된 1단계: 저장소 기반
 
 설계 문서 저장 이후 가장 작은 구현 단계는 **실거래 기능이 없는 개발 골격**이다.
 
@@ -75,12 +79,28 @@
 - 외부 Endpoint·Credential·실주문 메서드가 없는 Mock Broker 경계 작성
 - GitHub Actions, 문서 링크·Secret·계약 검증, 실제 검증 명령 추가
 - 커밋 `383b78e`의 GitHub Actions Run #1에서 두 CI Job 통과
+- `runtime-baseline.json`과 검증기로 Java·Maven·Spring Boot·Python 기준 고정
+- 실주문 경로·Secret 부재와 CI 통과를 확인해 1단계 종료 Gate 충족
+
+Maven Wrapper는 로컬 JDK·Maven 설치 수요와 승인 전에는 추가하지 않는다. 현재는 Spring Boot BOM, Maven Enforcer, Python 무의존 Lock과 CI를 재현성 기준으로 사용하며 전체 Transitive Dependency Lock을 주장하지 않는다.
+
+## 진행 중인 2단계: 안전 계약·도메인
+
+### 2026-07-24 구현
+
+- `Money`, `Price`, `Quantity`, `Ratio` Decimal 값과 명시적 반올림
+- 원본 offset·UTC 수집 시각·거래소 시간대·거래일 분리
+- Candidate·Decision·Reservation·Intent 타입 UUID
+- Candidate·Intent·Reservation·Broker Order 상태 전이 CSV와 양 언어 구현
+- 제출 여부 `UNKNOWN` Reservation의 해제·만료 금지
+- `UNKNOWN` Broker Order의 직접 정상화 금지와 Reconciliation 근거 강제
 
 ### 다음 작업
 
-1. 의존성 트리와 CI Artifact 재현성 기준을 기록하고 Maven Wrapper 필요성을 검토
-2. Python 서비스가 실제로 필요해지는 시점에 pytest·패키징 도입 필요성을 확인하고, 설치가 필요하면 사전 승인
-3. 1단계 Gate를 모두 확인한 뒤 2단계 전에 시장·계산 주기·Event Schema `TBD`를 사용자 결정으로 해소
+1. GitHub Actions에서 새 Java 상태 머신·Contract Test를 검증
+2. 거래 시장을 결정한 뒤 Instrument·시장 시간 계약 구현
+3. Avro/Protobuf 작은 PoC와 ADR 후 Event wire Schema 구현
+4. 수익 전략·정책 수치는 계속 `TBD`로 두고 안전 계약의 호환성·경계 테스트를 먼저 확장
 
 ## 기술 도입 시점
 

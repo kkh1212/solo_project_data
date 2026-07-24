@@ -4,14 +4,14 @@
 
 ## 현재 상태
 
-- 단계: 1단계 “실거래 기능 없는 저장소 기반 구축” 진행 중
+- 단계: 1단계 저장소 기반 Gate 통과, 2단계 안전 도메인 계약 진행 중
 - 기본 거래 상태: 실주문 불가
-- 저장소 상태: Java/Python 공통 계약, Trading Core·Order Executor 골격, Mock-only Gate와 CI 존재
+- 저장소 상태: Java/Python Decimal·시간·식별자·상태 계약, Trading Core·Order Executor 골격, Mock-only Gate와 CI 존재
 - 운영 목표: 안전 검증 단계를 통과한 뒤 보수적인 `live-auto`
 
 시장·전략·정책 수치·뉴스 공급자·LLM 공급자 등은 아직 확정하지 않았다. `docs/DECISIONS_PENDING.md`를 기준으로 결정한다.
 
-현재 코드에는 Toss Endpoint·SDK·Credential 입력·계좌 조회·실주문 기능이 없다. 실행 모드는 `mock-only` 하나뿐이고 Order Executor에는 외부 네트워크 능력이 없는 `MockBrokerGateway`만 존재한다.
+현재 코드에는 Toss Endpoint·SDK·Credential 입력·계좌 조회·실주문 기능이 없다. 실행 모드는 `mock-only` 하나뿐이고 Order Executor에는 외부 네트워크 능력이 없는 `MockBrokerGateway`만 존재한다. 수익 목적의 전략·정책 수치는 아직 구현하지 않았다.
 
 ## 문서 읽기 순서
 
@@ -70,12 +70,12 @@ make test
 
 ```text
 apps/                 Java Trading Core와 격리된 Mock-only Order Executor
-contracts/            Event·내부 API·Broker Adapter 계약 상태
-libs/java-domain/     BigDecimal·UTC·Event Envelope·실행 모드
-libs/python-contracts/ Decimal·UTC·Event Envelope·실행 모드
+contracts/            빌드·상태 전이·Event·내부 API·Broker Adapter 계약
+libs/java-domain/     Decimal·UTC·식별자·상태 머신·실행 모드
+libs/python-contracts/ Decimal·UTC·식별자·상태 머신·실행 모드
 platform/             후속 데이터 플랫폼 구성을 위한 경계
 tests/                Contract·Replay·Load·장애 테스트 경계
 fixtures/synthetic/   실계좌 정보가 없는 합성 데이터 전용
 ```
 
-이벤트 wire format은 아직 `TBD`다. 현재 Java/Python Envelope는 언어 내부 불변식이며 Avro 또는 Protobuf 확정으로 해석하지 않는다.
+이벤트 wire format과 거래 시장·Instrument Schema는 아직 `TBD`다. 현재 Java/Python 타입과 상태 전이 CSV는 언어 내부 안전 계약이며 Avro 또는 Protobuf 확정으로 해석하지 않는다.
