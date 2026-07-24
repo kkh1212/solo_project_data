@@ -193,6 +193,11 @@ pytest, Property-based Test, Testcontainers, Replay, 부하와 장애 주입은 
 - 명시적 4xx 거절과 409·Timeout의 `UNKNOWN` 분류, 자동 재시도 없음
 - 알 수 없는 Broker Enum을 위험한 정상값으로 매핑하지 않음
 - Kill 중에도 직접 주문 조회·취소에 사용하는 계좌 접근 Gate 유지
+- 외부 제안과 내부 Intent 타입 분리, 정책 버전·근거 SHA-256·계좌 별칭 검증
+- `generatedAt <= now < expiresAt` 만료 경계와 미래 제안 차단
+- 외부 제안 UUID와 Toss `clientOrderId`의 결정론적 변환
+- Java/Python/JSON Schema의 미국주식 주문 형태·Enum·필수 필드 일치
+- `NaN`·무한대 Decimal 입력 차단
 
 정확한 거래소·세션·시장 캘린더와 Event wire Schema 호환성 테스트는 아직
 포함하지 않는다. Toss 테스트는 합성 값과 Loopback만 사용하며 실제 API·계좌를

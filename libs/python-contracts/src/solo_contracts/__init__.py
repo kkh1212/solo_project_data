@@ -2,12 +2,19 @@
 
 from .event import EventEnvelope
 from .identifiers import OrderCandidateId
+from .identifiers import ExternalOrderProposalId
 from .identifiers import OrderIntentId
 from .identifiers import RiskDecisionId
 from .identifiers import RiskReservationId
 from .instrument import Instrument
 from .instrument import Market
 from .money import Money
+from .order import ExternalOrderProposal
+from .order import OrderSide
+from .order import OrderType
+from .order import PolicyReference
+from .order import TimeInForce
+from .order import UsEquityOrderSpec
 from .safety import TradingMode
 from .states import BrokerOrderStatus
 from .states import BrokerStateEvidence
@@ -24,6 +31,8 @@ from .values import Ratio
 
 __all__ = [
     "EventEnvelope",
+    "ExternalOrderProposal",
+    "ExternalOrderProposalId",
     "BrokerOrderStatus",
     "BrokerStateEvidence",
     "BrokerSubmissionCertainty",
@@ -36,7 +45,10 @@ __all__ = [
     "OrderCandidateStatus",
     "OrderIntentId",
     "OrderIntentStatus",
+    "OrderSide",
+    "OrderType",
     "Price",
+    "PolicyReference",
     "Quantity",
     "Ratio",
     "RiskDecisionId",
@@ -44,4 +56,6 @@ __all__ = [
     "RiskReservationStatus",
     "TradingMode",
     "TradingTime",
+    "TimeInForce",
+    "UsEquityOrderSpec",
 ]

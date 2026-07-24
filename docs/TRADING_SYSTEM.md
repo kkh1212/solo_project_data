@@ -90,9 +90,10 @@ Toss Adapter는 공식 주문 상태의 확인된 일부만 내부 상태로 매
 - 계좌번호가 아닌 내부 계좌 별칭
 - 원본 무결성과 호출 주체를 검증할 인증 정보
 
-정확한 Schema, Transport, 서명·상호 인증 방식은 `TBD`다. Trading Core는 이
-입력을 바로 Broker 요청으로 전달하지 않고 Candidate로 변환한 뒤 실행 안전
-정책, Reservation과 감사 기록을 적용한다.
+[외부 주문 제안 의미 계약](../contracts/internal-api/external-order-proposal.schema.json)
+버전 1은 필수 필드와 미국주식 주문 형태를 확정한다. Transport와 서명·상호 인증
+방식은 `TBD`다. Trading Core는 이 입력을 바로 Broker 요청으로 전달하지 않고
+Candidate로 변환한 뒤 실행 안전 정책, Reservation과 감사 기록을 적용한다.
 
 ## 자동 주문 흐름
 

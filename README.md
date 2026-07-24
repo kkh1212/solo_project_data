@@ -7,7 +7,8 @@
 - 단계: 1단계 저장소 기반 Gate 통과, 2단계 안전 도메인 계약 진행 중
 - 기본 거래 상태: 실주문 불가
 - 확정 시장·Broker: 미국주식, Toss Securities Open API
-- 저장소 상태: Java/Python Decimal·시간·Instrument·상태 계약, Mock-only 기본 Gate, 기본 구성에 연결되지 않은 Toss Adapter 기반
+- 저장소 상태: Java/Python Decimal·시간·Instrument·상태·외부 주문 제안 계약,
+  Mock-only 기본 Gate, 기본 구성에 연결되지 않은 Toss Adapter 기반
 - 운영 목표: 외부 정책 시스템의 주문 의도를 안전하게 검증·실행하고 단계별 승인 후 실거래
 
 수익 전략과 수익 목적의 정책은 다른 환경이 소유한다. 이 저장소는 실행 안전
@@ -20,6 +21,12 @@ Adapter와 환경 자격증명 입력 Port가 있다. 다만 기본 실행 모�
 하나뿐이고 애플리케이션은 외부 네트워크 능력이 없는 `MockBrokerGateway`만
 생성한다. 실제 자격증명·계좌정보는 없으며 Toss 서버 호출과 실주문도 수행하지
 않았다.
+
+외부 정책 입력은
+[External Order Proposal 의미 계약](contracts/internal-api/external-order-proposal.schema.json)을
+사용한다. 외부 제안은 내부 실행 승인이 아니며 Trading Core의 인증·만료·중복,
+안전 정책과 Reservation 검증을 통과해야 내부 `Order Intent`가 된다. 입력
+Transport와 서명·상호 인증 방식은 아직 `TBD`다.
 
 ## 문서 읽기 순서
 

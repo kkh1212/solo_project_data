@@ -16,6 +16,8 @@ class Money:
     def __post_init__(self) -> None:
         if not isinstance(self.amount, Decimal):
             raise TypeError("amount는 Decimal이어야 합니다")
+        if not self.amount.is_finite():
+            raise ValueError("amount는 유한한 Decimal이어야 합니다")
         if (
             len(self.currency) != 3
             or not self.currency.isascii()

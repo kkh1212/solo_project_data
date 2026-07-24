@@ -33,6 +33,7 @@ REQUIRED_PATHS = (
     "contracts/build/runtime-baseline.json",
     "contracts/domain/state-transitions.csv",
     "contracts/events/README.md",
+    "contracts/internal-api/external-order-proposal.schema.json",
     "contracts/internal-api/execution-mode.schema.json",
     "fixtures/synthetic/README.md",
     "libs/java-domain/pom.xml",
@@ -206,6 +207,53 @@ def verify_toss_contract(errors: list[str]) -> None:
             errors.append(f"Toss Java 계약 상수 누락: {expected_literal}")
 
 
+def verify_external_order_proposal_contract(errors: list[str]) -> None:
+    contract_path = (
+        PROJECT_ROOT
+        / "contracts"
+        / "internal-api"
+        / "external-order-proposal.schema.json"
+    )
+    try:
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        errors.append(f"외부 주문 제안 계약을 읽을 수 없음: {error}")
+        return
+
+    required = set(contract.get("required", []))
+    expected_required = {
+        "schemaVersion",
+        "proposalId",
+        "producerId",
+        "policy",
+        "generatedAt",
+        "expiresAt",
+        "accountAlias",
+        "instrument",
+        "order",
+    }
+    if required != expected_required:
+        errors.append(
+            "외부 주문 제안 필수 필드 불일치: "
+            f"actual={sorted(required)}, expected={sorted(expected_required)}"
+        )
+    properties = contract.get("properties", {})
+    if properties.get("schemaVersion", {}).get("const") != 1:
+        errors.append("외부 주문 제안 schemaVersion은 1이어야 함")
+
+    definitions = contract.get("$defs", {})
+    instrument = definitions.get("usEquityInstrument", {})
+    market = instrument.get("properties", {}).get("market", {})
+    if market.get("const") != "US_EQUITIES":
+        errors.append("외부 주문 제안 시장은 US_EQUITIES여야 함")
+    account_pattern = properties.get("accountAlias", {}).get("pattern", "")
+    if not account_pattern.startswith("^[a-z]"):
+        errors.append("외부 주문 제안은 계좌번호 대신 명시적 별칭을 요구해야 함")
+    order_variants = properties.get("order", {}).get("oneOf", [])
+    if len(order_variants) != 3:
+        errors.append("외부 주문 제안은 세 가지 주문 형태를 구분해야 함")
+
+
 def verify_build_baseline(errors: list[str]) -> None:
     baseline_path = PROJECT_ROOT / "contracts" / "build" / "runtime-baseline.json"
     try:
@@ -351,6 +399,7 @@ def main() -> int:
     verify_markdown_links(files, errors)
     verify_mock_only_contract(errors)
     verify_toss_contract(errors)
+    verify_external_order_proposal_contract(errors)
     verify_build_baseline(errors)
     verify_domain_contract(errors)
 

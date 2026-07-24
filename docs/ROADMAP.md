@@ -109,10 +109,16 @@ Maven Wrapper는 로컬 JDK·Maven 설치 수요와 승인 전에는 추가하�
 - 409·429·5xx·Timeout·알 수 없는 상태를 `UNKNOWN`으로 처리하는 Mock HTTP Test
 - 커밋 `5e70fb6`의 GitHub Actions Run #5에서 저장소/Python과 Java 25
   Maven 전체 검증 통과
+- [ADR-0007](adr/0007-external-order-proposal-contract.md)과 JSON
+  Schema로 외부 정책 제안과 내부 Order Intent 분리
+- Java/Python `ExternalOrderProposal`, 정책 버전·근거 SHA-256, 계좌 별칭,
+  생성·만료 시각과 미국주식 주문 형태 계약
+- 제안 UUID에서 Toss `clientOrderId`로 결정론적 변환
+- 미래·만료·계좌번호 형태·비정상 Decimal·주문 형태 오류의 Broker 호출 전 차단
 
 ### 다음 작업
 
-1. 외부 정책 시스템의 불변 주문 의도 필드·서명/상호 인증·Transport 계약 결정
+1. 외부 정책 시스템의 서명/상호 인증·Transport 계약 결정
 2. 계좌 별칭, Inbox/Outbox, 내부 장기 멱등성, 주문 시도 Journal과
    Reconciliation 저장 모델 구현
 3. 미국 시장 캘린더·DST·세션·종목 메타데이터 계약과 공식 조회 Adapter 구현

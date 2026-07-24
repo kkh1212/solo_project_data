@@ -4,7 +4,10 @@ import io.github.soloprojectdata.domain.Instrument;
 import io.github.soloprojectdata.domain.Money;
 import io.github.soloprojectdata.domain.Price;
 import io.github.soloprojectdata.domain.Quantity;
+import io.github.soloprojectdata.domain.order.ExternalOrderProposal;
+import io.github.soloprojectdata.domain.order.UsEquityOrderSpec;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -91,6 +94,35 @@ public final class TossOrderRequest {
                 null,
                 Objects.requireNonNull(orderAmount, "orderAmount"),
                 null
+        );
+    }
+
+    /**
+     * 유효한 외부 정책 제안을 Toss 요청으로 결정론적으로 변환한다.
+     */
+    public static TossOrderRequest fromExternalProposal(
+            ExternalOrderProposal proposal,
+            Instant now
+    ) {
+        Objects.requireNonNull(proposal, "proposal").requireUsableAt(now);
+        UsEquityOrderSpec order = proposal.order();
+        TossOrderSide side = TossOrderSide.valueOf(order.side().name());
+        if (order.orderAmount().isPresent()) {
+            return amountBasedMarket(
+                    proposal.clientOrderId(),
+                    proposal.instrument(),
+                    side,
+                    order.orderAmount().orElseThrow()
+            );
+        }
+        return quantityBased(
+                proposal.clientOrderId(),
+                proposal.instrument(),
+                side,
+                TossOrderType.valueOf(order.orderType().name()),
+                TossTimeInForce.valueOf(order.timeInForce().orElseThrow().name()),
+                order.quantity().orElseThrow(),
+                order.limitPrice().orElse(null)
         );
     }
 

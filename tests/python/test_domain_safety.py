@@ -43,6 +43,10 @@ class DecimalValueTypesTest(unittest.TestCase):
             Price.exact("0", "USD")
         with self.assertRaises(ValueError):
             Quantity.exact("-1")
+        with self.assertRaises(ValueError):
+            Quantity.exact("NaN")
+        with self.assertRaises(ValueError):
+            Ratio.exact("Infinity")
 
     def test_수량반올림을명시한다(self) -> None:
         self.assertEqual(Decimal("1.2"), Quantity.rounded("1.25", 1).value)

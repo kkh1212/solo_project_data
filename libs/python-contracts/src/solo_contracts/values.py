@@ -32,6 +32,8 @@ class Quantity:
     def __post_init__(self) -> None:
         if not isinstance(self.value, Decimal):
             raise TypeError("value는 Decimal이어야 합니다")
+        if not self.value.is_finite():
+            raise ValueError("수량은 유한한 Decimal이어야 합니다")
         if self.value <= 0:
             raise ValueError("수량은 0보다 커야 합니다")
 
@@ -59,6 +61,8 @@ class Ratio:
     def __post_init__(self) -> None:
         if not isinstance(self.value, Decimal):
             raise TypeError("value는 Decimal이어야 합니다")
+        if not self.value.is_finite():
+            raise ValueError("비율은 유한한 Decimal이어야 합니다")
         if self.value < 0 or self.value > 1:
             raise ValueError("비율은 0 이상 1 이하여야 합니다")
 

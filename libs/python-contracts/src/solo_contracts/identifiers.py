@@ -8,6 +8,22 @@ from uuid import UUID
 
 
 @dataclass(frozen=True, slots=True)
+class ExternalOrderProposalId:
+    value: UUID
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.value, UUID):
+            raise TypeError("value는 UUID여야 합니다")
+
+    @classmethod
+    def parse(cls, value: str) -> Self:
+        return cls(UUID(value))
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
 class OrderCandidateId:
     value: UUID
 

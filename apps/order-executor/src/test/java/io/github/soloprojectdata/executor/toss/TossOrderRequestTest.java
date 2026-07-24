@@ -8,10 +8,54 @@ import io.github.soloprojectdata.domain.Instrument;
 import io.github.soloprojectdata.domain.Money;
 import io.github.soloprojectdata.domain.Price;
 import io.github.soloprojectdata.domain.Quantity;
+import io.github.soloprojectdata.domain.id.ExternalOrderProposalId;
+import io.github.soloprojectdata.domain.order.ExternalOrderProposal;
+import io.github.soloprojectdata.domain.order.OrderSide;
+import io.github.soloprojectdata.domain.order.OrderType;
+import io.github.soloprojectdata.domain.order.PolicyReference;
+import io.github.soloprojectdata.domain.order.TimeInForce;
+import io.github.soloprojectdata.domain.order.UsEquityOrderSpec;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class TossOrderRequestTest {
+
+    @Test
+    void 외부정책제안Id를TossClientOrderId로결정론적으로변환한다() {
+        Instant generatedAt = Instant.parse("2026-07-24T00:00:00Z");
+        ExternalOrderProposal proposal = new ExternalOrderProposal(
+                ExternalOrderProposalId.parse(
+                        "00000000-0000-0000-0000-000000000101"
+                ),
+                "externalPolicy",
+                new PolicyReference(
+                        "profitPolicy",
+                        "v1",
+                        "a".repeat(64)
+                ),
+                generatedAt,
+                generatedAt.plusSeconds(60),
+                "brokerage-main",
+                Instrument.usEquity("AAPL"),
+                UsEquityOrderSpec.quantityBased(
+                        OrderSide.BUY,
+                        OrderType.LIMIT,
+                        TimeInForce.DAY,
+                        Quantity.exact("2"),
+                        Price.exact("185.50", "USD")
+                )
+        );
+
+        TossOrderRequest request = TossOrderRequest.fromExternalProposal(
+                proposal,
+                generatedAt.plusSeconds(1)
+        );
+
+        assertEquals(proposal.clientOrderId(), request.clientOrderId());
+        assertEquals("AAPL", request.toPayload().get("symbol"));
+        assertEquals("2", request.toPayload().get("quantity"));
+    }
 
     @Test
     void 미국주식지정가주문을Decimal문자열로만든다() {

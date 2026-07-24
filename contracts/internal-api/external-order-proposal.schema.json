@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-project-data.invalid/contracts/internal-api/external-order-proposal.schema.json",
+  "title": "External order proposal semantic contract",
+  "description": "Transport와 인증 방식을 확정하지 않는 외부 정책 주문 제안 의미 계약",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "proposalId",
+    "producerId",
+    "policy",
+    "generatedAt",
+    "expiresAt",
+    "accountAlias",
+    "instrument",
+    "order"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "proposalId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "producerId": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$"
+    },
+    "policy": {
+      "$ref": "#/$defs/policyReference"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "accountAlias": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{2,31}$",
+      "description": "계좌번호가 아닌 내부 별칭"
+    },
+    "instrument": {
+      "$ref": "#/$defs/usEquityInstrument"
+    },
+    "order": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/quantityLimitOrder"
+        },
+        {
+          "$ref": "#/$defs/quantityMarketOrder"
+        },
+        {
+          "$ref": "#/$defs/amountMarketOrder"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "policyReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyId",
+        "policyVersion",
+        "evidenceSha256"
+      ],
+      "properties": {
+        "policyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$"
+        },
+        "policyVersion": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+        },
+        "evidenceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "usEquityInstrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "market",
+        "symbol"
+      ],
+      "properties": {
+        "market": {
+          "const": "US_EQUITIES"
+        },
+        "symbol": {
+          "type": "string",
+          "pattern": "^[A-Z0-9.-]+$"
+        }
+      }
+    },
+    "positiveDecimal": {
+      "type": "string",
+      "pattern": "^(?:0*[1-9][0-9]*(?:\\.[0-9]+)?|0*\\.[0-9]*[1-9][0-9]*)$",
+      "maxLength": 30
+    },
+    "side": {
+      "type": "string",
+      "enum": [
+        "BUY",
+        "SELL"
+      ]
+    },
+    "quantityLimitOrder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "side",
+        "orderType",
+        "timeInForce",
+        "quantity",
+        "limitPrice",
+        "currency"
+      ],
+      "properties": {
+        "side": {
+          "$ref": "#/$defs/side"
+        },
+        "orderType": {
+          "const": "LIMIT"
+        },
+        "timeInForce": {
+          "enum": [
+            "DAY",
+            "CLS"
+          ]
+        },
+        "quantity": {
+          "$ref": "#/$defs/positiveDecimal"
+        },
+        "limitPrice": {
+          "$ref": "#/$defs/positiveDecimal"
+        },
+        "currency": {
+          "const": "USD"
+        }
+      }
+    },
+    "quantityMarketOrder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "side",
+        "orderType",
+        "timeInForce",
+        "quantity",
+        "currency"
+      ],
+      "properties": {
+        "side": {
+          "$ref": "#/$defs/side"
+        },
+        "orderType": {
+          "const": "MARKET"
+        },
+        "timeInForce": {
+          "const": "DAY"
+        },
+        "quantity": {
+          "$ref": "#/$defs/positiveDecimal"
+        },
+        "currency": {
+          "const": "USD"
+        }
+      }
+    },
+    "amountMarketOrder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "side",
+        "orderType",
+        "orderAmount",
+        "currency"
+      ],
+      "properties": {
+        "side": {
+          "$ref": "#/$defs/side"
+        },
+        "orderType": {
+          "const": "MARKET"
+        },
+        "orderAmount": {
+          "$ref": "#/$defs/positiveDecimal"
+        },
+        "currency": {
+          "const": "USD"
+        }
+      }
+    }
+  }
+}
